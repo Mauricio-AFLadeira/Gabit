@@ -1,0 +1,14 @@
+.git
+.github
+.githooks
+.env
+.build
+.swiftpm
+DerivedData
+*.xcodeproj
+*.xcworkspace
+xcuserdata
+*.ipa
+*.dSYM
+*.dSYM.zip
+README.md

@@ -1,0 +1,18 @@
+#!/bin/sh
+# Roda o lint antes do commit. Se o ambiente não estiver de pé, avisa e libera
+# o commit — travar o trabalho de quem está com o Docker desligado custa mais
+# do que um lint atrasado.
+set -e
+
+if ! command -v docker >/dev/null 2>&1; then
+    echo "pre-commit: docker não encontrado; lint pulado."
+    exit 0
+fi
+
+if ! docker compose ps --services --status running 2>/dev/null | grep -qx app; then
+    echo "pre-commit: container 'app' não está rodando; lint pulado (rode 'make up')."
+    exit 0
+fi
+
+echo "pre-commit: rodando lint..."
+make lint

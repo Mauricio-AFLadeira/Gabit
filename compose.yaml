@@ -1,0 +1,38 @@
+name: gabit
+
+services:
+  app:
+    build:
+      context: .
+      target: dev
+      args:
+        SWIFT_VERSION: ${SWIFT_VERSION:-6.3.3}
+        HOST_UID: ${HOST_UID:-1000}
+        HOST_GID: ${HOST_GID:-1000}
+        WITH_SWIFTLINT: ${WITH_SWIFTLINT:-0}
+        SWIFTLINT_VERSION: ${SWIFTLINT_VERSION:-0.65.1}
+    image: gabit-dev:${SWIFT_VERSION:-6.3.3}
+    init: true
+    working_dir: /workspace
+    environment:
+      APP_ENV: ${APP_ENV:-development}
+    volumes:
+      # The repository itself, so edits on the host are visible instantly —
+      # there is nothing to rebuild between `make lint` runs.
+      - .:/workspace
+      # Kept off the bind mount on purpose: Xcode writes Mach-O objects into
+      # .build on macOS and the container writes ELF ones. Sharing the directory
+      # makes the two toolchains fight over the same artifacts.
+      - build:/workspace/.build
+      - spm-cache:/home/gabit/.cache/org.swift.swiftpm
+    healthcheck:
+      test: ["CMD-SHELL", "swift --version > /dev/null 2>&1 || exit 1"]
+      interval: 30s
+      timeout: 15s
+      start_period: 10s
+      retries: 3
+    command: ["sleep", "infinity"]
+
+volumes:
+  build:
+  spm-cache:

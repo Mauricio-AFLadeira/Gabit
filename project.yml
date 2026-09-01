@@ -1,0 +1,38 @@
+# Source of truth for the Xcode project. `make xcode` turns this into
+# Gabit.xcodeproj, which is generated and therefore not committed — the file
+# you edit is this one.
+
+name: Gabit
+
+options:
+  bundleIdPrefix: com.gabit
+  deploymentTarget:
+    iOS: "17.0"
+  createIntermediateGroups: true
+  groupSortPosition: top
+
+packages:
+  GabitKit:
+    path: .
+
+targets:
+  Gabit:
+    type: application
+    platform: iOS
+    sources:
+      - path: App/Gabit
+    dependencies:
+      - package: GabitKit
+        product: GabitKit
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.gabit.app
+        MARKETING_VERSION: "0.1.0"
+        CURRENT_PROJECT_VERSION: "1"
+        SWIFT_VERSION: "6.0"
+        SWIFT_STRICT_CONCURRENCY: complete
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_CFBundleDisplayName: Gabit
+        INFOPLIST_KEY_UILaunchScreen_Generation: YES
+        INFOPLIST_KEY_UISupportedInterfaceOrientations: UIInterfaceOrientationPortrait
+        TARGETED_DEVICE_FAMILY: "1"

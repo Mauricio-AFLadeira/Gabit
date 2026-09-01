@@ -60,3 +60,17 @@ fastlane/report.xml
 fastlane/Preview.html
 fastlane/screenshots/**/*.png
 fastlane/test_output
+
+# ------------------------------------------------------------------
+# Ambiente de desenvolvimento (start-environment)
+# ------------------------------------------------------------------
+
+# Variáveis locais; o modelo versionado é .env.example
+.env
+
+# Gerado por `make xcode` a partir do project.yml
+*.xcodeproj
+*.xcworkspace
+
+DerivedData/
+.swiftpm/
