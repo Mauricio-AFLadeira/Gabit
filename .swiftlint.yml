@@ -2,12 +2,15 @@
 # swift-format already covers layout, so these rules stay on the semantic side.
 
 included:
-  - Sources
-  - App
+  - Packages
+  - Gabit
 
 excluded:
   - .build
   - DerivedData
+  - Packages/GabitDomain/Tests
+  - Packages/GabitData/Tests
+  - Packages/GabitUI/Tests
 
 opt_in_rules:
   - empty_count

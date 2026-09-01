@@ -1,6 +1,7 @@
 # Source of truth for the Xcode project. `make xcode` turns this into
-# Gabit.xcodeproj, which is generated and therefore not committed — the file
-# you edit is this one.
+# Gabit.xcodeproj, which is generated and therefore not committed — the file you
+# edit is this one. Gabit.xcworkspace (committed) wraps the project together
+# with the three local packages.
 
 name: Gabit
 
@@ -12,18 +13,26 @@ options:
   groupSortPosition: top
 
 packages:
-  GabitKit:
-    path: .
+  GabitDomain:
+    path: Packages/GabitDomain
+  GabitData:
+    path: Packages/GabitData
+  GabitUI:
+    path: Packages/GabitUI
 
 targets:
   Gabit:
     type: application
     platform: iOS
     sources:
-      - path: App/Gabit
+      - path: Gabit
     dependencies:
-      - package: GabitKit
-        product: GabitKit
+      - package: GabitDomain
+        product: GabitDomain
+      - package: GabitData
+        product: GabitData
+      - package: GabitUI
+        product: GabitUI
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.gabit.app
@@ -36,3 +45,22 @@ targets:
         INFOPLIST_KEY_UILaunchScreen_Generation: YES
         INFOPLIST_KEY_UISupportedInterfaceOrientations: UIInterfaceOrientationPortrait
         TARGETED_DEVICE_FAMILY: "1"
+
+  GabitUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources:
+      - path: Gabit/UITests
+    dependencies:
+      - target: Gabit
+
+schemes:
+  Gabit:
+    build:
+      targets:
+        Gabit: all
+        GabitUITests: [test]
+    test:
+      targets:
+        - GabitUITests
+      gatherCoverageData: true

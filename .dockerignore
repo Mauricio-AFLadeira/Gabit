@@ -6,7 +6,8 @@
 .swiftpm
 DerivedData
 *.xcodeproj
-*.xcworkspace
+Gabit.xcworkspace/xcuserdata/
+Gabit.xcworkspace/xcshareddata/IDEWorkspaceChecks.plist
 xcuserdata
 *.ipa
 *.dSYM
