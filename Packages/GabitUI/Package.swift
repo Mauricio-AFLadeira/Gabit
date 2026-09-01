@@ -27,7 +27,11 @@ let package = Package(
         ),
         .testTarget(
             name: "GabitUITests",
-            dependencies: ["GabitUI"],
+            dependencies: [
+                "GabitUI",
+                .product(name: "GabitDomain", package: "GabitDomain"),
+                .product(name: "GabitData", package: "GabitData"),
+            ],
             swiftSettings: [.swiftLanguageMode(.v6)]
         ),
     ]

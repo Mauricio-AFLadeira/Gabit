@@ -23,7 +23,12 @@ let package = Package(
         ),
         .testTarget(
             name: "GabitDataTests",
-            dependencies: ["GabitData"],
+            dependencies: [
+                "GabitData",
+                // Explicit: SwiftPM does not re-export a target's own
+                // dependencies, and the tests speak in domain types.
+                .product(name: "GabitDomain", package: "GabitDomain"),
+            ],
             swiftSettings: [.swiftLanguageMode(.v6)]
         ),
     ]
