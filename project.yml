@@ -63,6 +63,25 @@ targets:
         INFOPLIST_KEY_UISupportedInterfaceOrientations: UIInterfaceOrientationPortrait
         TARGETED_DEVICE_FAMILY: "1"
 
+  # GabitData's tests run on Linux too, but only half of them: everything
+  # SwiftData-shaped sits behind `#if canImport(SwiftData)`, and that includes
+  # the subclass that replays the whole store contract against the real store.
+  # Without this target the persistence the app actually ships has no executed
+  # tests anywhere, and the contract-inheritance design buys nothing.
+  GabitDataPackageTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - path: Packages/GabitData/Tests/GabitDataTests
+    dependencies:
+      - package: GabitDomain
+        product: GabitDomain
+      - package: GabitData
+        product: GabitData
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.gabit.app.datatests
+
   # GabitUI is Apple-only, so its tests cannot run under `swift test` the way
   # the domain and data packages do. The scheme Xcode generates for a local
   # package in a workspace has no test action at all, so the package's test
@@ -105,10 +124,12 @@ schemes:
     build:
       targets:
         Gabit: all
+        GabitDataPackageTests: [test]
         GabitPackageTests: [test]
         GabitSmokeUITests: [test]
     test:
       targets:
+        - GabitDataPackageTests
         - GabitPackageTests
         - GabitSmokeUITests
       gatherCoverageData: true

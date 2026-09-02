@@ -111,17 +111,21 @@ warning the UI merely renders.
 
 ## Tests
 
-142 across four targets. The gate is not coverage — it is that every domain
-rule maps to a named test, which a reviewer can audit by reading test names
-alone.
+145 test methods across four targets; CI executes 76 on Linux and 101 on the
+simulator. The gate is not coverage — it is that every domain rule maps to a
+named test, which a reviewer can audit by reading test names alone.
 
 | Level | Count | Runs on |
 |---|---|---|
 | Domain units | 60 | Linux, milliseconds, no host app |
-| Store contract | 23 | Linux for the fake, simulator for SwiftData |
+| Store contract | 16 on Linux, 39 on the simulator | the fake everywhere; SwiftData only where it exists |
 | View models | 58 | Simulator |
-| Snapshots | 6 baselines | Simulator — **not recorded yet, see below** |
+| Snapshots | 3 tests, 6 baselines | Simulator — **not recorded yet, see below** |
 | Smoke UI | 1 | Simulator |
+
+The store contract runs twice on Apple platforms: `StoreContractTests` against
+the in-memory fake, then again through `SwiftDataStoreTests`, which inherits
+every case and swaps in the real store.
 
 Two things worth knowing about how they are written:
 
