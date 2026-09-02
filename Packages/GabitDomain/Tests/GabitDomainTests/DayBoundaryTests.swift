@@ -1,6 +1,5 @@
-import XCTest
-
 import GabitDomain
+import XCTest
 
 /// Time zones, which is where trackers like this one quietly go wrong.
 final class DayBoundaryTests: XCTestCase {

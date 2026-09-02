@@ -1,7 +1,6 @@
 import Foundation
-import XCTest
-
 import GabitDomain
+import XCTest
 
 @testable import GabitData
 
@@ -16,7 +15,6 @@ class StoreContractTests: XCTestCase {
 
     /// Overridden by the SwiftData subclass. Returns nil when the store under
     /// test is unavailable on this platform, which skips the whole case.
-    @MainActor
     func makeStore() throws -> (any GabitStore)? {
         InMemoryStore(calendar: calendar)
     }
@@ -46,13 +44,11 @@ class StoreContractTests: XCTestCase {
 
     // MARK: - Profile
 
-    @MainActor
     func test_profile_isNil_beforeOnboardingHasRun() throws {
         guard let store = try makeStore() else { return }
         XCTAssertNil(try store.loadProfile())
     }
 
-    @MainActor
     func test_profile_roundTripsThroughTheStore() throws {
         guard let store = try makeStore() else { return }
         let original = profile()
@@ -62,7 +58,6 @@ class StoreContractTests: XCTestCase {
         XCTAssertEqual(loaded, original)
     }
 
-    @MainActor
     func test_profile_isReplacedRatherThanDuplicated_onASecondSave() throws {
         guard let store = try makeStore() else { return }
         try store.save(profile())
@@ -79,14 +74,12 @@ class StoreContractTests: XCTestCase {
 
     // MARK: - Day logs
 
-    @MainActor
     func test_log_forAnUntouchedDay_isEmptyRatherThanMissing() throws {
         guard let store = try makeStore() else { return }
         let log = try store.log(on: date(2026, 9, 6))
         XCTAssertTrue(log.isEmpty)
     }
 
-    @MainActor
     func test_food_roundTripsWithItsMacros() throws {
         guard let store = try makeStore() else { return }
         let entry = FoodEntry(
@@ -103,7 +96,6 @@ class StoreContractTests: XCTestCase {
         XCTAssertEqual(log.food.first, entry)
     }
 
-    @MainActor
     func test_foodWithoutMacros_roundTripsAsNil_notAsZeroes() throws {
         guard let store = try makeStore() else { return }
         let entry = FoodEntry(
@@ -118,7 +110,6 @@ class StoreContractTests: XCTestCase {
         XCTAssertNil(log.food.first?.macros, "zeroes would read as a logged macro breakdown")
     }
 
-    @MainActor
     func test_burn_roundTripsAndStaysOutOfTheIntakeTotal() throws {
         guard let store = try makeStore() else { return }
         try store.addFood(
@@ -135,7 +126,6 @@ class StoreContractTests: XCTestCase {
         XCTAssertEqual(log.burned, 240, accuracy: 0.001)
     }
 
-    @MainActor
     func test_entriesAreAddressedByAnyInstantWithinTheDay() throws {
         guard let store = try makeStore() else { return }
         try store.addFood(
@@ -148,7 +138,6 @@ class StoreContractTests: XCTestCase {
         XCTAssertEqual(log.food.count, 1, "the store normalises to local midnight so callers need not")
     }
 
-    @MainActor
     func test_removeFood_deletesTheEntry() throws {
         guard let store = try makeStore() else { return }
         let entry = FoodEntry(name: "Mistake", kcal: 400, slot: .snack, loggedAt: date(2026, 9, 6))
@@ -158,7 +147,6 @@ class StoreContractTests: XCTestCase {
         XCTAssertTrue(try store.log(on: date(2026, 9, 6)).food.isEmpty)
     }
 
-    @MainActor
     func test_removeFood_reportsAnUnknownEntry() throws {
         guard let store = try makeStore() else { return }
         let missing = UUID()
@@ -167,7 +155,6 @@ class StoreContractTests: XCTestCase {
         }
     }
 
-    @MainActor
     func test_removeBurn_deletesTheEntry() throws {
         guard let store = try makeStore() else { return }
         let entry = BurnEntry(kind: .steps, name: "Walk", kcal: 120, occurredAt: date(2026, 9, 6))
@@ -177,7 +164,6 @@ class StoreContractTests: XCTestCase {
         XCTAssertTrue(try store.log(on: date(2026, 9, 6)).burn.isEmpty)
     }
 
-    @MainActor
     func test_logsInRange_areReturnedOldestFirst_andExcludeTheOutside() throws {
         guard let store = try makeStore() else { return }
         for day in [3, 5, 6, 12] {
@@ -197,7 +183,6 @@ class StoreContractTests: XCTestCase {
         XCTAssertEqual(range.map { calendar.component(.day, from: $0.date) }, [5, 6])
     }
 
-    @MainActor
     func test_entriesOnDifferentDays_doNotLeakIntoEachOther() throws {
         guard let store = try makeStore() else { return }
         try store.addFood(
@@ -215,7 +200,6 @@ class StoreContractTests: XCTestCase {
 
     // MARK: - Check-ins
 
-    @MainActor
     func test_checkIns_roundTripAndAreOrderedOldestFirst() throws {
         guard let store = try makeStore() else { return }
         try store.add(WeightCheckIn(weightKg: 79, takenAt: date(2026, 9, 5)))
@@ -225,7 +209,6 @@ class StoreContractTests: XCTestCase {
         XCTAssertEqual(readings.map(\.weightKg), [80, 79])
     }
 
-    @MainActor
     func test_removeCheckIn_reportsAnUnknownReading() throws {
         guard let store = try makeStore() else { return }
         let missing = UUID()
@@ -234,7 +217,6 @@ class StoreContractTests: XCTestCase {
         }
     }
 
-    @MainActor
     func test_removeCheckIn_deletesTheReading() throws {
         guard let store = try makeStore() else { return }
         let reading = WeightCheckIn(weightKg: 78.4, takenAt: date(2026, 9, 6))

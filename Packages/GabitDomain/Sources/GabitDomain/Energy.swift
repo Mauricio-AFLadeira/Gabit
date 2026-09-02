@@ -55,6 +55,7 @@ public struct EnergyBudget: Sendable, Codable, Hashable {
 ///   - profile: The user's measurements and sex.
 ///   - date: The instant to compute age at.
 ///   - calendar: The calendar to compute age in.
+/// - Returns: Kilocalories burned per day at complete rest.
 public func basalRate(_ profile: Profile, on date: Date, calendar: Calendar = .current) -> Kcal {
     let age = Double(profile.age(on: date, calendar: calendar))
     return 10 * profile.weightKg

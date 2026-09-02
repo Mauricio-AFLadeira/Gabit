@@ -1,6 +1,5 @@
-import SwiftUI
-
 import GabitDomain
+import SwiftUI
 
 /// Quick add. The recent strip is the point of the screen — everything below it
 /// is for food that is not a repeat.

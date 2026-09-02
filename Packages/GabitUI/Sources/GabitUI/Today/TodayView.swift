@@ -1,6 +1,5 @@
-import SwiftUI
-
 import GabitDomain
+import SwiftUI
 
 /// Today: one number owns the screen.
 ///

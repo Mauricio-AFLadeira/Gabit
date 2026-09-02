@@ -10,8 +10,7 @@
     /// Implements the same three protocols as `InMemoryStore` and nothing more.
     /// Everything SwiftData-shaped — `ModelContext`, `FetchDescriptor`, the
     /// record classes — stops at this file's boundary.
-    @MainActor
-    public final class SwiftDataStore: GabitStore {
+        public final class SwiftDataStore: GabitStore {
 
         private let context: ModelContext
         private let calendar: Calendar
@@ -24,6 +23,8 @@
         /// Builds a container over the app's schema.
         ///
         /// - Parameter inMemory: Keeps everything in memory, for tests and previews.
+        /// - Returns: A container over every entity in `GabitSchema`.
+        /// - Throws: Whatever SwiftData raises when the store cannot be opened.
         public static func makeContainer(inMemory: Bool = false) throws -> ModelContainer {
             let schema = Schema(GabitSchema.all)
             let configuration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: inMemory)

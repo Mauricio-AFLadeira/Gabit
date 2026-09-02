@@ -15,13 +15,11 @@
     /// expectations, so they cannot drift apart.
     final class SwiftDataStoreTests: StoreContractTests {
 
-        @MainActor
         override func makeStore() throws -> (any GabitStore)? {
             let container = try SwiftDataStore.makeContainer(inMemory: true)
             return SwiftDataStore(context: ModelContext(container), calendar: calendar)
         }
 
-        @MainActor
         func test_secondEntryOnADay_reusesTheSameDayRecord() throws {
             let container = try SwiftDataStore.makeContainer(inMemory: true)
             let context = ModelContext(container)
@@ -47,7 +45,6 @@
             XCTAssertEqual(records.first?.food.count, 2)
         }
 
-        @MainActor
         func test_deletingADayRecord_cascadesToItsEntries() throws {
             let container = try SwiftDataStore.makeContainer(inMemory: true)
             let context = ModelContext(container)

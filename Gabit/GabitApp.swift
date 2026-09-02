@@ -1,9 +1,8 @@
-import SwiftData
-import SwiftUI
-
 import GabitData
 import GabitDomain
 import GabitUI
+import SwiftData
+import SwiftUI
 
 /// The composition root, and nothing else.
 ///

@@ -1,7 +1,6 @@
-import XCTest
-
 import GabitData
 import GabitDomain
+import XCTest
 
 @testable import GabitUI
 

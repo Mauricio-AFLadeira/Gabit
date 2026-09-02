@@ -1,5 +1,4 @@
 import Foundation
-
 import GabitDomain
 
 /// The resolved values a screen renders.

@@ -1,5 +1,4 @@
 import Foundation
-
 import GabitDomain
 
 /// What can go wrong at the persistence boundary.
@@ -18,11 +17,12 @@ public enum StoreError: Error, Equatable {
 
 /// Reads and writes the user's profile.
 ///
-/// `@MainActor` rather than `Sendable`: SwiftData's `ModelContext` is not
-/// sendable, and the whole app touches these stores from the main actor
-/// anyway. Isolating the protocol keeps that fact visible instead of
-/// scattering `@MainActor` over every conforming type.
-@MainActor
+/// Deliberately not `Sendable` and deliberately not isolated. SwiftData's
+/// `ModelContext` is not sendable, so the live store is confined to one
+/// isolation domain — but that is a fact about the implementation and the
+/// caller, not about the contract. Pinning `@MainActor` here would drag the
+/// in-memory fake onto the main actor as well, and with it every test that
+/// touches a store, which on Linux breaks XCTest's method discovery outright.
 public protocol ProfileStoring {
 
     /// The stored profile, or nil before onboarding has run.
@@ -35,7 +35,6 @@ public protocol ProfileStoring {
 ///
 /// Days are addressed by any instant within them; conforming types normalise to
 /// local midnight with `DayBoundary` so callers never have to.
-@MainActor
 public protocol DayLogStoring {
 
     /// The log for the day containing `day`. Never nil — an untouched day is an
@@ -52,7 +51,6 @@ public protocol DayLogStoring {
 }
 
 /// Reads and writes weight readings.
-@MainActor
 public protocol CheckInStoring {
 
     /// Every reading, oldest first.
@@ -64,5 +62,4 @@ public protocol CheckInStoring {
 
 /// The three stores the app needs, gathered so the composition root can pass
 /// one value around instead of three.
-@MainActor
 public protocol GabitStore: ProfileStoring, DayLogStoring, CheckInStoring {}

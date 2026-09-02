@@ -1,8 +1,7 @@
 import Foundation
-import Observation
-
 import GabitData
 import GabitDomain
+import Observation
 
 /// How far back the trend chart looks.
 public enum TrendRange: String, Sendable, Hashable, CaseIterable, Identifiable {

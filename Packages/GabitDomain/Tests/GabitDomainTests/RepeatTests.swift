@@ -1,6 +1,5 @@
-import XCTest
-
 import GabitDomain
+import XCTest
 
 /// The operation the two-tap claim in plan §8 rests on.
 final class RepeatTests: XCTestCase {

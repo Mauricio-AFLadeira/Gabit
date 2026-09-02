@@ -1,6 +1,5 @@
-import XCTest
-
 import GabitDomain
+import XCTest
 
 /// Every rule in plan §3 that concerns the energy math. Names state the rule,
 /// not the method call, so a reviewer can audit coverage by reading them.

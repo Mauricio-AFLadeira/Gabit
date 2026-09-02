@@ -1,8 +1,7 @@
-import Observation
-import SwiftUI
-
 import GabitData
 import GabitDomain
+import Observation
+import SwiftUI
 
 /// What the app is showing: onboarding until there is a profile, then the tabs.
 @MainActor

@@ -1,6 +1,5 @@
-import XCTest
-
 import GabitDomain
+import XCTest
 
 /// The three figures on the Progress screen.
 final class AdherenceTests: XCTestCase {

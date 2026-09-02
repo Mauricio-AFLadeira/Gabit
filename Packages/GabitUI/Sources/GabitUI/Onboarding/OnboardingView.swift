@@ -1,6 +1,5 @@
-import SwiftUI
-
 import GabitDomain
+import SwiftUI
 
 /// Onboarding. Two steps, of which the second is the one that matters.
 public struct OnboardingView: View {

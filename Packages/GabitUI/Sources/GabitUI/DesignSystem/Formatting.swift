@@ -1,5 +1,4 @@
 import Foundation
-
 import GabitDomain
 
 /// Every string a screen shows is produced here, not in a view.

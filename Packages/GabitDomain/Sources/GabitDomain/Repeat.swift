@@ -38,7 +38,8 @@ public enum RepeatMeal {
     /// Deduplicated by name so the quick-add strip offers four different things
     /// rather than four copies of this morning's coffee.
     public static func recent(from logs: [DayLog], limit: Int = 4) -> [FoodEntry] {
-        let entries = logs
+        let entries =
+            logs
             .flatMap(\.food)
             .sorted { $0.loggedAt > $1.loggedAt }
 

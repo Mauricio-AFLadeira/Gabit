@@ -20,7 +20,6 @@
     /// Light only: the foundations sheet specifies `iPhone · light only · v0.1`,
     /// which narrows plan §5's "light and dark" to one scheme for this version.
     /// Dark comes back with a dark palette, and doubles this file.
-    @MainActor
     final class SnapshotTests: XCTestCase {
 
         /// Flip to true, run once, flip back to re-record every baseline.
@@ -36,6 +35,7 @@
 
         // MARK: - Fixtures
 
+        @MainActor
         private func todayModel(over: Bool = false) -> TodayViewModel {
             let food: [FoodEntry] =
                 over
@@ -98,6 +98,7 @@
             return model
         }
 
+        @MainActor
         private func quickAddModel() -> QuickAddViewModel {
             let store = UIFixtures.store(
                 logs: [
@@ -153,6 +154,7 @@
 
         // MARK: - Baselines
 
+        @MainActor
         func test_today() {
             assertBoth(
                 TodayView(model: todayModel(), onLogFood: {}, onLogBurn: {}),
@@ -160,6 +162,7 @@
             )
         }
 
+        @MainActor
         func test_todayOverBudget() {
             assertBoth(
                 TodayView(model: todayModel(over: true), onLogFood: {}, onLogBurn: {}),
@@ -167,6 +170,7 @@
             )
         }
 
+        @MainActor
         func test_quickAdd() {
             assertBoth(
                 QuickAddView(model: quickAddModel(), onDismiss: {}),

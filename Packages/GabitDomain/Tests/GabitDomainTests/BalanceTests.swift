@@ -1,6 +1,5 @@
-import XCTest
-
 import GabitDomain
+import XCTest
 
 /// The ledger rules from plan §3, including the one this app exists to get
 /// right: burn credits the budget, it does not cancel out food.

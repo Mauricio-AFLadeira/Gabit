@@ -89,6 +89,7 @@ public struct MacroTargets: Sendable, Hashable {
 /// - Parameters:
 ///   - budget: The day's energy target.
 ///   - profile: Supplies the body mass protein is scaled from.
+/// - Returns: Grams of protein, carbohydrate and fat to aim at today.
 public func macroTargets(for budget: EnergyBudget, profile: Profile) -> MacroTargets {
     // 2.0 g/kg on a cut protects lean mass while in deficit; 1.6 g/kg otherwise
     // is the usual maintenance recommendation.

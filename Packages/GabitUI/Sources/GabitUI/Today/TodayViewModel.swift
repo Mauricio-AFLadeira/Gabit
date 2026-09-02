@@ -1,8 +1,7 @@
 import Foundation
-import Observation
-
 import GabitData
 import GabitDomain
+import Observation
 
 /// Everything the Today screen shows, already resolved.
 ///

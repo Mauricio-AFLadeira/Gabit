@@ -1,8 +1,7 @@
 import Foundation
-import Observation
-
 import GabitData
 import GabitDomain
+import Observation
 
 /// The direction the user picks, in their words rather than the domain's.
 public enum GoalChoice: String, Sendable, Hashable, CaseIterable, Identifiable {

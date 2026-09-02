@@ -1,6 +1,5 @@
-import XCTest
-
 import GabitDomain
+import XCTest
 
 /// A projection is a promise about the future, so the rules that make it stay
 /// silent matter more than the arithmetic that produces it.

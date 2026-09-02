@@ -1,5 +1,4 @@
 import Foundation
-
 import GabitDomain
 
 /// The store the tests run against.
@@ -10,7 +9,6 @@ import GabitDomain
 ///
 /// It also builds on Linux, so the domain-adjacent half of the test suite runs
 /// in the container without a simulator.
-@MainActor
 public final class InMemoryStore: GabitStore {
 
     private var profile: Profile?

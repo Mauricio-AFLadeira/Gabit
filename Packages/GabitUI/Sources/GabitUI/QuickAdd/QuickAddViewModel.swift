@@ -1,8 +1,7 @@
 import Foundation
-import Observation
-
 import GabitData
 import GabitDomain
+import Observation
 
 /// Quick add, where the two-tap claim is won or lost.
 ///

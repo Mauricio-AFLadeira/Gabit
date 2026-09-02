@@ -1,7 +1,6 @@
-import XCTest
-
 import GabitData
 import GabitDomain
+import XCTest
 
 @testable import GabitUI
 
@@ -26,11 +25,12 @@ final class ProgressViewModelTests: XCTestCase {
     private func steadyLoss(count: Int = 12, stepKg: Double = -0.5) -> [WeightCheckIn] {
         (0..<count).map { index in
             let daysBack = (count - 1 - index) * 7
-            let takenAt = UIFixtures.calendar.date(
-                byAdding: .day,
-                value: -daysBack,
-                to: UIFixtures.now
-            ) ?? UIFixtures.now
+            let takenAt =
+                UIFixtures.calendar.date(
+                    byAdding: .day,
+                    value: -daysBack,
+                    to: UIFixtures.now
+                ) ?? UIFixtures.now
             return WeightCheckIn(
                 weightKg: 82 + stepKg * Double(index),
                 takenAt: takenAt
