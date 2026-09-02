@@ -35,6 +35,10 @@ public enum Layout {
 
     /// The minimum tappable square, including keypad keys and segment controls.
     public static let minimumHitTarget: CGFloat = 44
+
+    /// Room left under scrolling content so a pinned action bar never covers
+    /// the last row.
+    public static let actionBarClearance: CGFloat = 72
 }
 
 extension View {
