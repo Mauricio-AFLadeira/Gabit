@@ -10,6 +10,10 @@ import SwiftUI
 /// boolean, not a second screen to keep in sync.
 public struct TodayView: View {
 
+    /// Addressed by the smoke test. Kept here so the test and the view cannot
+    /// drift apart silently.
+    public static let heroIdentifier = "today.hero"
+
     // A plain stored property is enough: @Observable tracks the properties
     // body reads, and this view needs no two-way binding.
     private let model: TodayViewModel
@@ -74,7 +78,8 @@ public struct TodayView: View {
                 value: model.heroValue,
                 caption: model.heroCaption,
                 tint: heroTint,
-                accessibilityLabel: model.heroAccessibilityLabel
+                accessibilityLabel: model.heroAccessibilityLabel,
+                identifier: TodayView.heroIdentifier
             )
 
             HStack(spacing: Layout.Space.sm) {

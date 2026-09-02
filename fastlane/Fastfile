@@ -25,18 +25,28 @@ platform :ios do
   lane :ui do
     generate
 
-    # Temporary: GabitUI's package tests are not in the Gabit scheme yet, and
-    # the scheme names a workspace exposes for local packages cannot be checked
-    # without a Mac. Printing them once tells us what to wire up.
-    sh("cd .. && xcodebuild -workspace Gabit.xcworkspace -list || true")
+    # GabitUI is Apple-only, so its tests cannot run under `swift test` on
+    # Linux like the domain and data packages do. The workspace exposes a
+    # scheme per local package, which is how they get a simulator.
+    scan(
+      workspace: WORKSPACE,
+      scheme: "GabitUI",
+      destination: SIMULATOR,
+      clean: false,
+      code_coverage: true,
+      result_bundle: true,
+      output_directory: "fastlane/test_output/package"
+    )
 
+    # The app scheme carries the smoke test.
     scan(
       workspace: WORKSPACE,
       scheme: SCHEME,
       destination: SIMULATOR,
       clean: false,
       code_coverage: true,
-      result_bundle: true
+      result_bundle: true,
+      output_directory: "fastlane/test_output/smoke"
     )
   end
 

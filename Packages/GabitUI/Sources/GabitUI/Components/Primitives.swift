@@ -29,12 +29,20 @@ public struct HeroFigure: View {
     private let caption: String
     private let tint: Color
     private let accessibilityLabel: String
+    private let identifier: String
 
-    public init(value: String, caption: String, tint: Color, accessibilityLabel: String) {
+    public init(
+        value: String,
+        caption: String,
+        tint: Color,
+        accessibilityLabel: String,
+        identifier: String
+    ) {
         self.value = value
         self.caption = caption
         self.tint = tint
         self.accessibilityLabel = accessibilityLabel
+        self.identifier = identifier
     }
 
     public var body: some View {
@@ -53,6 +61,11 @@ public struct HeroFigure: View {
         .frame(maxWidth: .infinity)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(accessibilityLabel)
+        // Merging the figure and its caption into one element makes it an
+        // "other" element rather than a static text, so a UI test cannot find
+        // it by label alone. The identifier is how it is addressed, and it does
+        // not change when the copy does.
+        .accessibilityIdentifier(identifier)
     }
 }
 
