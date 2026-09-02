@@ -1,6 +1,7 @@
 # Source of truth for the Xcode project. `make xcode` turns this into
-# Gabit.xcodeproj, which is generated and therefore not committed — the file
-# you edit is this one.
+# Gabit.xcodeproj, which is generated and therefore not committed — the file you
+# edit is this one. Gabit.xcworkspace (committed) wraps the project together
+# with the three local packages.
 
 name: Gabit
 
@@ -12,27 +13,123 @@ options:
   groupSortPosition: top
 
 packages:
-  GabitKit:
-    path: .
+  GabitDomain:
+    path: Packages/GabitDomain
+  GabitData:
+    path: Packages/GabitData
+  GabitUI:
+    path: Packages/GabitUI
+  SnapshotTesting:
+    url: https://github.com/pointfreeco/swift-snapshot-testing
+    from: 1.19.4
+
+# Shared by every target, so a new one cannot forget them.
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+    GENERATE_INFOPLIST_FILE: YES
+  configs:
+    # GabitPackageTests uses `@testable import GabitUI`, so the package has to
+    # be built with testability. Stated rather than relied on as a default.
+    Debug:
+      ENABLE_TESTABILITY: YES
 
 targets:
   Gabit:
     type: application
     platform: iOS
     sources:
-      - path: App/Gabit
+      # UITests/ is the UI-test bundle's source, not the app's. Compiling it
+      # into the app made the app target import XCTest, which is not available
+      # to a non-test target.
+      - path: Gabit
+        excludes:
+          - "UITests/**"
     dependencies:
-      - package: GabitKit
-        product: GabitKit
+      - package: GabitDomain
+        product: GabitDomain
+      - package: GabitData
+        product: GabitData
+      - package: GabitUI
+        product: GabitUI
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.gabit.app
         MARKETING_VERSION: "0.1.0"
         CURRENT_PROJECT_VERSION: "1"
-        SWIFT_VERSION: "6.0"
         SWIFT_STRICT_CONCURRENCY: complete
-        GENERATE_INFOPLIST_FILE: YES
         INFOPLIST_KEY_CFBundleDisplayName: Gabit
         INFOPLIST_KEY_UILaunchScreen_Generation: YES
         INFOPLIST_KEY_UISupportedInterfaceOrientations: UIInterfaceOrientationPortrait
         TARGETED_DEVICE_FAMILY: "1"
+
+  # GabitData's tests run on Linux too, but only half of them: everything
+  # SwiftData-shaped sits behind `#if canImport(SwiftData)`, and that includes
+  # the subclass that replays the whole store contract against the real store.
+  # Without this target the persistence the app actually ships has no executed
+  # tests anywhere, and the contract-inheritance design buys nothing.
+  GabitDataPackageTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - path: Packages/GabitData/Tests/GabitDataTests
+    dependencies:
+      - package: GabitDomain
+        product: GabitDomain
+      - package: GabitData
+        product: GabitData
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.gabit.app.datatests
+
+  # GabitUI is Apple-only, so its tests cannot run under `swift test` the way
+  # the domain and data packages do. The scheme Xcode generates for a local
+  # package in a workspace has no test action at all, so the package's test
+  # sources are compiled into a target here, where the Gabit scheme can run
+  # them. No test host: these are logic and snapshot tests, and hosting them in
+  # the app would link GabitUI twice.
+  GabitPackageTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - path: Packages/GabitUI/Tests/GabitUITests
+    dependencies:
+      - package: GabitDomain
+        product: GabitDomain
+      - package: GabitData
+        product: GabitData
+      - package: GabitUI
+        product: GabitUI
+      - package: SnapshotTesting
+        product: SnapshotTesting
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.gabit.app.packagetests
+
+  # Named for the file it holds rather than GabitUITests, which is already
+  # the name of GabitUI's own SwiftPM test target.
+  GabitSmokeUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources:
+      - path: Gabit/UITests
+    dependencies:
+      - target: Gabit
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.gabit.app.smokeuitests
+
+schemes:
+  Gabit:
+    build:
+      targets:
+        Gabit: all
+        GabitDataPackageTests: [test]
+        GabitPackageTests: [test]
+        GabitSmokeUITests: [test]
+    test:
+      targets:
+        - GabitDataPackageTests
+        - GabitPackageTests
+        - GabitSmokeUITests
+      gatherCoverageData: true

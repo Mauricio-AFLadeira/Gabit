@@ -1,0 +1,142 @@
+# Four stages, fast feedback first, per plan §6. Total time to a TestFlight
+# build under fifteen minutes.
+#
+# The two cheap stages run on Linux in the same container developers use, which
+# is what keeps them cheap: no simulator, no Xcode, no queue for a macOS runner.
+# Only the stages that genuinely need the Apple SDKs pay for one.
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  lint:
+    name: Lint & format
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    container: swift:6.3.3-noble
+    steps:
+      - uses: actions/checkout@v4
+      - name: swift-format
+        run: swift format lint --strict --recursive Packages Gabit
+
+  unit:
+    name: Fast tests
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    container: swift:6.3.3-noble
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Cache SwiftPM
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/org.swift.swiftpm
+          key: spm-${{ runner.os }}-${{ hashFiles('Packages/*/Package.resolved') }}
+          restore-keys: spm-${{ runner.os }}-
+
+      # GabitDomain must not reach for an Apple UI framework. Building it on
+      # Linux is the check — the compiler enforces plan §8's rule rather than a
+      # reviewer noticing an import.
+      - name: Domain
+        run: swift test --package-path Packages/GabitDomain
+
+      - name: Data
+        run: swift test --package-path Packages/GabitData
+
+  simulator:
+    name: Simulator tests
+    runs-on: macos-15
+    timeout-minutes: 20
+    needs: [lint, unit]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.3"
+
+      - name: Install fastlane
+        run: bundle install --jobs 4
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: View models, snapshots and the smoke test
+        run: bundle exec fastlane ui
+        env:
+          FASTLANE_SKIP_UPDATE_CHECK: "1"
+
+      # A failed snapshot is a picture, and a picture is the fastest way to see
+      # what changed. Uploading them turns "the snapshot test failed" into
+      # something reviewable from the browser.
+      - name: Upload failure diffs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: snapshot-failures
+          path: |
+            **/__Snapshots__/**
+            **/*.xcresult
+          retention-days: 7
+          if-no-files-found: ignore
+
+  beta:
+    name: Beta
+    runs-on: macos-15
+    timeout-minutes: 25
+    needs: [simulator]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # changelog_from_git_commits needs history, and the default checkout
+          # is a single commit deep.
+          fetch-depth: 0
+
+      - uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: "3.3"
+
+      - name: Install fastlane
+        run: bundle install --jobs 4
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Archive and upload
+        run: bundle exec fastlane beta
+        env:
+          GITHUB_RUN_NUMBER: ${{ github.run_number }}
+          FASTLANE_APPLE_ID: ${{ secrets.FASTLANE_APPLE_ID }}
+          FASTLANE_TEAM_ID: ${{ secrets.FASTLANE_TEAM_ID }}
+          MATCH_GIT_URL: ${{ secrets.MATCH_GIT_URL }}
+          MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
+          APP_STORE_CONNECT_API_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ID }}
+
+      # Without an App Store account the lane still archives, and the build is
+      # still installable from here. Shipping is automated either way.
+      - name: Upload the build
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: Gabit-ipa
+          path: build/*.ipa
+          retention-days: 14
+          if-no-files-found: warn

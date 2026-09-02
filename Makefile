@@ -4,9 +4,12 @@ SHELL := /bin/bash
 COMPOSE := docker compose
 EXEC    := $(COMPOSE) exec -T app
 
-# swift-format checks syntax, so it covers App/ (SwiftUI) even though the
-# container cannot compile it.
-SWIFT_DIRS := Sources App
+# Packages the Linux toolchain can build and test. GabitUI is absent on
+# purpose: it imports SwiftUI, which has no Linux implementation.
+LINUX_PACKAGES := GabitDomain GabitData
+
+# swift-format works on syntax, so it covers GabitUI and the app target too.
+SWIFT_DIRS := Packages Gabit
 
 .PHONY: help setup up down logs shell lint fmt build test xcode reset
 
@@ -24,7 +27,7 @@ setup:  ## Prepara o projeto pela primeira vez (.env, hooks, build da imagem)
 
 up:  ## Sobe o container do toolchain
 	$(COMPOSE) up -d
-	@echo "Toolchain Swift no ar. Use 'make shell', 'make lint' ou 'make build'."
+	@echo "Toolchain Swift no ar. Use 'make test', 'make lint' ou 'make shell'."
 
 down:  ## Derruba o ambiente
 	$(COMPOSE) down
@@ -35,29 +38,29 @@ logs:  ## Acompanha os logs do container
 shell:  ## Abre um shell dentro do container
 	$(COMPOSE) exec app bash
 
-lint:  ## Verifica formatação e estilo de todo o Swift (Sources/ e App/)
+lint:  ## Verifica formatação e estilo de todo o Swift (inclusive GabitUI)
 	$(EXEC) swift format lint --strict --recursive $(SWIFT_DIRS)
-	$(EXEC) swift format lint --strict Package.swift
 	@if $(EXEC) test -x /usr/local/bin/swiftlint; then $(EXEC) swiftlint lint --quiet; fi
 
 fmt:  ## Formata todo o Swift no lugar
 	$(EXEC) swift format --in-place --recursive $(SWIFT_DIRS)
-	$(EXEC) swift format --in-place Package.swift
 
-build:  ## Compila o core (GabitKit) dentro do container
-	$(EXEC) swift build
+build:  ## Compila os pacotes independentes de plataforma
+	@for pkg in $(LINUX_PACKAGES); do \
+		echo "==> build $$pkg"; \
+		$(EXEC) swift build --package-path Packages/$$pkg || exit 1; \
+	done
 
-test:  ## Roda os testes do core
-	@if [ ! -d Tests ]; then \
-		echo "Ainda não há testes. Crie Tests/GabitKitTests/ e rode de novo — 'swift test' já está configurado."; \
-	else \
-		$(EXEC) swift test; \
-	fi
+test:  ## Roda os testes de domínio e de persistência
+	@for pkg in $(LINUX_PACKAGES); do \
+		echo "==> test $$pkg"; \
+		$(EXEC) swift test --package-path Packages/$$pkg || exit 1; \
+	done
 
 xcode:  ## Gera Gabit.xcodeproj a partir do project.yml (macOS, fora do container)
 	@command -v xcodegen >/dev/null 2>&1 || { echo "xcodegen não encontrado. Instale com: brew install xcodegen"; exit 1; }
 	xcodegen generate
-	@echo "Gerado Gabit.xcodeproj. Abra com: open Gabit.xcodeproj"
+	@echo "Gerado Gabit.xcodeproj. Abra o workspace com: open Gabit.xcworkspace"
 
 reset:  ## Derruba tudo e apaga os volumes (destrói caches e artefatos locais)
 	$(COMPOSE) down -v

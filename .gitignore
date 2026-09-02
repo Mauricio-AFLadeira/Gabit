@@ -68,9 +68,10 @@ fastlane/test_output
 # Variáveis locais; o modelo versionado é .env.example
 .env
 
-# Gerado por `make xcode` a partir do project.yml
+# Gerado por `make xcode` a partir do project.yml.
+# Gabit.xcworkspace é versionado: ele amarra o projeto gerado aos três
+# pacotes locais e não muda quando o projeto é regerado.
 *.xcodeproj
-*.xcworkspace
 
 DerivedData/
 .swiftpm/

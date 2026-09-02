@@ -1,0 +1,77 @@
+# Lanes are the unit of work the pipeline calls, and the unit a developer can
+# run locally. Anything CI does, `fastlane <lane>` does on a laptop — a pipeline
+# you cannot reproduce on your own machine is a pipeline you debug by pushing.
+
+default_platform(:ios)
+
+WORKSPACE = "Gabit.xcworkspace"
+SCHEME = "Gabit"
+SIMULATOR = "platform=iOS Simulator,name=iPhone 16,OS=latest"
+
+platform :ios do
+  desc "Regenerate the Xcode project from project.yml"
+  lane :generate do
+    sh("cd .. && xcodegen generate")
+  end
+
+  desc "Domain and data packages. No simulator, so it finishes in seconds."
+  lane :unit do
+    ["GabitDomain", "GabitData"].each do |package|
+      sh("cd ../Packages/#{package} && swift test")
+    end
+  end
+
+  desc "View models, snapshots and the smoke test. Needs a simulator."
+  lane :ui do
+    generate
+    scan(
+      workspace: WORKSPACE,
+      scheme: SCHEME,
+      destination: SIMULATOR,
+      clean: false,
+      code_coverage: true,
+      result_bundle: true
+    )
+  end
+
+  desc "Build number from the CI run, archive, upload to TestFlight."
+  lane :beta do
+    generate
+
+    # The run number is monotonic and unique per repository, which is exactly
+    # what a build number has to be. Deriving it from a commit count breaks the
+    # first time someone force-pushes.
+    build_number = ENV["GITHUB_RUN_NUMBER"] || Time.now.strftime("%Y%m%d%H%M")
+    increment_build_number(build_number: build_number, xcodeproj: "Gabit.xcodeproj")
+
+    # match keeps signing reproducible on a clean runner. Without an App Store
+    # account the lane still archives and the workflow uploads the .ipa as an
+    # artifact — the point is that shipping is automated, not that a store
+    # listing exists.
+    if ENV["MATCH_GIT_URL"]
+      sync_code_signing(type: "appstore", readonly: true)
+    end
+
+    gym(
+      workspace: WORKSPACE,
+      scheme: SCHEME,
+      export_method: "app-store",
+      output_directory: "build",
+      output_name: "Gabit.ipa"
+    )
+
+    if ENV["APP_STORE_CONNECT_API_KEY_ID"]
+      upload_to_testflight(
+        skip_waiting_for_build_processing: true,
+        # Release notes come from commit subjects, which is a quiet incentive to
+        # write good ones.
+        changelog: changelog_from_git_commits(
+          commits_count: 20,
+          pretty: "- %s"
+        )
+      )
+    else
+      UI.important("No App Store Connect key set — archived only, no upload.")
+    end
+  end
+end

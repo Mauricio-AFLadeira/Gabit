@@ -20,10 +20,13 @@ services:
       # The repository itself, so edits on the host are visible instantly —
       # there is nothing to rebuild between `make lint` runs.
       - .:/workspace
-      # Kept off the bind mount on purpose: Xcode writes Mach-O objects into
-      # .build on macOS and the container writes ELF ones. Sharing the directory
-      # makes the two toolchains fight over the same artifacts.
-      - build:/workspace/.build
+      # Build directories are kept off the bind mount on purpose: Xcode writes
+      # Mach-O objects into .build on macOS and the container writes ELF ones.
+      # Sharing the directory makes the two toolchains fight over the same
+      # artifacts, and the failure looks like a corrupt module cache.
+      - domain-build:/workspace/Packages/GabitDomain/.build
+      - data-build:/workspace/Packages/GabitData/.build
+      - ui-build:/workspace/Packages/GabitUI/.build
       - spm-cache:/home/gabit/.cache/org.swift.swiftpm
     healthcheck:
       test: ["CMD-SHELL", "swift --version > /dev/null 2>&1 || exit 1"]
@@ -34,5 +37,7 @@ services:
     command: ["sleep", "infinity"]
 
 volumes:
-  build:
+  domain-build:
+  data-build:
+  ui-build:
   spm-cache:

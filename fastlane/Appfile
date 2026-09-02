@@ -1,0 +1,5 @@
+app_identifier("com.gabit.app")
+
+# Left to the environment so the repository carries no account details.
+apple_id(ENV["FASTLANE_APPLE_ID"])
+team_id(ENV["FASTLANE_TEAM_ID"])
