@@ -120,7 +120,7 @@ alone.
 | Domain units | 60 | Linux, milliseconds, no host app |
 | Store contract | 23 | Linux for the fake, simulator for SwiftData |
 | View models | 58 | Simulator |
-| Snapshots | 6 baselines | Simulator |
+| Snapshots | 6 baselines | Simulator — **not recorded yet, see below** |
 | Smoke UI | 1 | Simulator |
 
 Two things worth knowing about how they are written:
@@ -181,8 +181,11 @@ target.
    string against the in-memory store and a fixed clock.
 5. **Render it.** If you find yourself writing `if` or arithmetic in the view,
    the value belongs in the view model.
-6. **Re-record the snapshots** if the layout moved: flip `recording` in
-   `SnapshotTests`, run once, flip it back, and read the diff before committing it.
+6. **Re-record the snapshots** if the layout moved. Delete the affected file
+   under `Packages/GabitUI/Tests/GabitUITests/__Snapshots__/`, run
+   `GabitPackageTests` once — the run records it and fails, by design — then
+   look at the new PNG before committing it. `recording` in `SnapshotTests`
+   forces every baseline to re-record at once.
 
 Small commits, trunk-based on `main`, every push green or reverted.
 
@@ -232,6 +235,21 @@ local packages and does not churn.
 **No `prod` runtime image.** The production artifact of an iOS app is a signed
 `.ipa` from Xcode. The Dockerfile's `release` stage exists for Linux CI and for
 reusing `GabitDomain` server-side, not for shipping the app.
+
+**The snapshot baselines are not in the repository yet.** They can only be
+produced by running the tests on a Mac, and the first run is meant to fail:
+swift-snapshot-testing records a missing baseline and then tells you it did.
+To seed them, once:
+
+```
+make xcode
+open Gabit.xcworkspace     # run the GabitPackageTests target — 3 tests fail, 6 PNGs appear
+git add Packages/GabitUI/Tests/GabitUITests/__Snapshots__
+```
+
+Look at the six images before committing them. A baseline nobody has ever
+looked at asserts that the screen still renders the way it rendered — which is
+worth something, but not what these tests are for.
 
 **Light only.** The foundations sheet specifies `iPhone · light only · v0.1`,
 which narrows the plan's "light and dark" snapshots to one scheme for this
