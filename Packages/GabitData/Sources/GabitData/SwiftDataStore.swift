@@ -10,7 +10,7 @@
     /// Implements the same three protocols as `InMemoryStore` and nothing more.
     /// Everything SwiftData-shaped — `ModelContext`, `FetchDescriptor`, the
     /// record classes — stops at this file's boundary.
-        public final class SwiftDataStore: GabitStore {
+    public final class SwiftDataStore: GabitStore {
 
         private let context: ModelContext
         private let calendar: Calendar
