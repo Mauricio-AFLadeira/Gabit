@@ -24,29 +24,13 @@ platform :ios do
   desc "View models, snapshots and the smoke test. Needs a simulator."
   lane :ui do
     generate
-
-    # GabitUI is Apple-only, so its tests cannot run under `swift test` on
-    # Linux like the domain and data packages do. The workspace exposes a
-    # scheme per local package, which is how they get a simulator.
-    scan(
-      workspace: WORKSPACE,
-      scheme: "GabitUI",
-      destination: SIMULATOR,
-      clean: false,
-      code_coverage: true,
-      result_bundle: true,
-      output_directory: "fastlane/test_output/package"
-    )
-
-    # The app scheme carries the smoke test.
     scan(
       workspace: WORKSPACE,
       scheme: SCHEME,
       destination: SIMULATOR,
       clean: false,
       code_coverage: true,
-      result_bundle: true,
-      output_directory: "fastlane/test_output/smoke"
+      result_bundle: true
     )
   end
 

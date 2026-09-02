@@ -19,12 +19,20 @@ packages:
     path: Packages/GabitData
   GabitUI:
     path: Packages/GabitUI
+  SnapshotTesting:
+    url: https://github.com/pointfreeco/swift-snapshot-testing
+    from: 1.19.4
 
 # Shared by every target, so a new one cannot forget them.
 settings:
   base:
     SWIFT_VERSION: "6.0"
     GENERATE_INFOPLIST_FILE: YES
+  configs:
+    # GabitPackageTests uses `@testable import GabitUI`, so the package has to
+    # be built with testability. Stated rather than relied on as a default.
+    Debug:
+      ENABLE_TESTABILITY: YES
 
 targets:
   Gabit:
@@ -55,6 +63,30 @@ targets:
         INFOPLIST_KEY_UISupportedInterfaceOrientations: UIInterfaceOrientationPortrait
         TARGETED_DEVICE_FAMILY: "1"
 
+  # GabitUI is Apple-only, so its tests cannot run under `swift test` the way
+  # the domain and data packages do. The scheme Xcode generates for a local
+  # package in a workspace has no test action at all, so the package's test
+  # sources are compiled into a target here, where the Gabit scheme can run
+  # them. No test host: these are logic and snapshot tests, and hosting them in
+  # the app would link GabitUI twice.
+  GabitPackageTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - path: Packages/GabitUI/Tests/GabitUITests
+    dependencies:
+      - package: GabitDomain
+        product: GabitDomain
+      - package: GabitData
+        product: GabitData
+      - package: GabitUI
+        product: GabitUI
+      - package: SnapshotTesting
+        product: SnapshotTesting
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.gabit.app.packagetests
+
   # Named for the file it holds rather than GabitUITests, which is already
   # the name of GabitUI's own SwiftPM test target.
   GabitSmokeUITests:
@@ -73,8 +105,10 @@ schemes:
     build:
       targets:
         Gabit: all
+        GabitPackageTests: [test]
         GabitSmokeUITests: [test]
     test:
       targets:
+        - GabitPackageTests
         - GabitSmokeUITests
       gatherCoverageData: true
