@@ -1,0 +1,7 @@
+# Signing assets live in their own private repository, referenced by
+# environment variable so nothing about the account is committed here.
+git_url(ENV["MATCH_GIT_URL"])
+storage_mode("git")
+type("appstore")
+app_identifier(["com.gabit.app"])
+readonly(true)

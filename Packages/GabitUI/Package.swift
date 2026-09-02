@@ -15,6 +15,9 @@ let package = Package(
     dependencies: [
         .package(path: "../GabitDomain"),
         .package(path: "../GabitData"),
+        // The only third-party dependency in the project, per plan §2. It is
+        // used by the test target alone, so nothing ships in the app binary.
+        .package(url: "https://github.com/pointfreeco/swift-snapshot-testing", from: "1.19.4"),
     ],
     targets: [
         .target(
@@ -31,6 +34,7 @@ let package = Package(
                 "GabitUI",
                 .product(name: "GabitDomain", package: "GabitDomain"),
                 .product(name: "GabitData", package: "GabitData"),
+                .product(name: "SnapshotTesting", package: "swift-snapshot-testing"),
             ],
             swiftSettings: [.swiftLanguageMode(.v6)]
         ),

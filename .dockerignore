@@ -3,6 +3,7 @@
 .githooks
 .env
 .build
+Packages/*/.build
 .swiftpm
 DerivedData
 *.xcodeproj
