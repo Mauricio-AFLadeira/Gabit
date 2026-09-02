@@ -24,6 +24,12 @@ platform :ios do
   desc "View models, snapshots and the smoke test. Needs a simulator."
   lane :ui do
     generate
+
+    # Temporary: GabitUI's package tests are not in the Gabit scheme yet, and
+    # the scheme names a workspace exposes for local packages cannot be checked
+    # without a Mac. Printing them once tells us what to wire up.
+    sh("cd .. && xcodebuild -workspace Gabit.xcworkspace -list || true")
+
     scan(
       workspace: WORKSPACE,
       scheme: SCHEME,
