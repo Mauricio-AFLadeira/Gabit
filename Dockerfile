@@ -1,10 +1,10 @@
 # syntax=docker/dockerfile:1
 
-# Swift toolchain for the parts of Gabit that are platform-agnostic.
+# Swift toolchain for the parts of MauIt that are platform-agnostic.
 #
 # SwiftUI, UIKit and the iOS SDK are closed-source Apple frameworks and do not
 # exist for Linux, so this image deliberately does NOT try to build the app.
-# It builds and tests `Sources/GabitKit` (pure Swift + Foundation) and formats
+# It builds and tests `Sources/MauItKit` (pure Swift + Foundation) and formats
 # and lints every .swift file in the repository, App/ included — swift-format
 # works on syntax, so it does not need the Apple SDKs to check the SwiftUI layer.
 # The app itself is built with Xcode on macOS; see README.md.
@@ -30,26 +30,26 @@ RUN apt-get update \
 RUN if getent passwd "${HOST_UID}" >/dev/null; then \
         userdel -r "$(getent passwd "${HOST_UID}" | cut -d: -f1)" >/dev/null 2>&1 || true; \
     fi \
-    && if ! getent group "${HOST_GID}" >/dev/null; then groupadd --gid "${HOST_GID}" gabit; fi \
-    && useradd --uid "${HOST_UID}" --gid "${HOST_GID}" --create-home --shell /bin/bash gabit \
+    && if ! getent group "${HOST_GID}" >/dev/null; then groupadd --gid "${HOST_GID}" mauit; fi \
+    && useradd --uid "${HOST_UID}" --gid "${HOST_GID}" --create-home --shell /bin/bash mauit \
     && mkdir -p /workspace \
     && chown "${HOST_UID}:${HOST_GID}" /workspace
 
 WORKDIR /workspace
-USER gabit
+USER mauit
 
 # ---------------------------------------------------------------- deps ------
 # Resolve the package graph from the manifest alone, before any source is
 # copied, so editing a .swift file does not re-resolve dependencies.
 FROM base AS deps
 
-COPY --chown=gabit:gabit Package.swift Package.resolve[d] ./
+COPY --chown=mauit:mauit Package.swift Package.resolve[d] ./
 
-RUN mkdir -p Sources/GabitKit \
-    && : > Sources/GabitKit/Placeholder.swift \
+RUN mkdir -p Sources/MauItKit \
+    && : > Sources/MauItKit/Placeholder.swift \
     && swift package resolve \
     && rm -rf Sources \
-    && mkdir -p /home/gabit/.cache/org.swift.swiftpm
+    && mkdir -p /home/mauit/.cache/org.swift.swiftpm
 
 # ----------------------------------------------------------------- dev ------
 # The stage compose runs. Long-lived toolchain container: it holds no server,
@@ -70,10 +70,10 @@ RUN if [ "${WITH_SWIFTLINT}" = "1" ]; then \
         && install -m 0755 /tmp/swiftlint/.build/release/swiftlint /usr/local/bin/swiftlint \
         && rm -rf /tmp/swiftlint; \
     fi
-USER gabit
+USER mauit
 
-COPY --from=deps --chown=gabit:gabit /home/gabit/.cache /home/gabit/.cache
-COPY --from=deps --chown=gabit:gabit /workspace /workspace
+COPY --from=deps --chown=mauit:mauit /home/mauit/.cache /home/mauit/.cache
+COPY --from=deps --chown=mauit:mauit /workspace /workspace
 
 HEALTHCHECK --interval=30s --timeout=15s --start-period=10s --retries=3 \
     CMD swift --version > /dev/null 2>&1 || exit 1
@@ -82,12 +82,12 @@ CMD ["sleep", "infinity"]
 
 # ------------------------------------------------------------- release ------
 # Release build of the platform-agnostic core, with no dev tooling in the image.
-# This is what a Linux CI job or a server-side reuse of GabitKit targets — it is
+# This is what a Linux CI job or a server-side reuse of MauItKit targets — it is
 # not the shippable app, which is an .ipa produced by Xcode on macOS.
 FROM base AS build
 
-COPY --chown=gabit:gabit Package.swift Package.resolve[d] ./
-COPY --chown=gabit:gabit Sources ./Sources
+COPY --chown=mauit:mauit Package.swift Package.resolve[d] ./
+COPY --chown=mauit:mauit Sources ./Sources
 
 RUN swift build -c release
 

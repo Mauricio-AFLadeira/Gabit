@@ -44,20 +44,20 @@ fmt:  ## Formata todo o Swift no lugar
 	$(EXEC) swift format --in-place --recursive $(SWIFT_DIRS)
 	$(EXEC) swift format --in-place Package.swift
 
-build:  ## Compila o core (GabitKit) dentro do container
+build:  ## Compila o core (MauItKit) dentro do container
 	$(EXEC) swift build
 
 test:  ## Roda os testes do core
 	@if [ ! -d Tests ]; then \
-		echo "Ainda não há testes. Crie Tests/GabitKitTests/ e rode de novo — 'swift test' já está configurado."; \
+		echo "Ainda não há testes. Crie Tests/MauItKitTests/ e rode de novo — 'swift test' já está configurado."; \
 	else \
 		$(EXEC) swift test; \
 	fi
 
-xcode:  ## Gera Gabit.xcodeproj a partir do project.yml (macOS, fora do container)
+xcode:  ## Gera MauIt.xcodeproj a partir do project.yml (macOS, fora do container)
 	@command -v xcodegen >/dev/null 2>&1 || { echo "xcodegen não encontrado. Instale com: brew install xcodegen"; exit 1; }
 	xcodegen generate
-	@echo "Gerado Gabit.xcodeproj. Abra com: open Gabit.xcodeproj"
+	@echo "Gerado MauIt.xcodeproj. Abra com: open MauIt.xcodeproj"
 
 reset:  ## Derruba tudo e apaga os volumes (destrói caches e artefatos locais)
 	$(COMPOSE) down -v

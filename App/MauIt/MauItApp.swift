@@ -1,11 +1,11 @@
 import SwiftUI
 
 @main
-struct GabitApp: App {
+struct MauItApp: App {
 
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            RootView()
         }
     }
 }
