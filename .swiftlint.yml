@@ -1,0 +1,33 @@
+# Only read when the image is built with WITH_SWIFTLINT=1 (see .env.example).
+# swift-format already covers layout, so these rules stay on the semantic side.
+
+included:
+  - Sources
+  - App
+
+excluded:
+  - .build
+  - DerivedData
+
+opt_in_rules:
+  - empty_count
+  - explicit_init
+  - first_where
+  - force_unwrapping
+  - implicitly_unwrapped_optional
+  - last_where
+  - redundant_nil_coalescing
+  - toggle_bool
+  - unneeded_parentheses_in_closure_argument
+
+disabled_rules:
+  # swift-format owns formatting; leaving these on means two tools disagreeing.
+  - line_length
+  - trailing_comma
+
+identifier_name:
+  min_length: 2
+  excluded: [id, ok, up, x, y, z]
+
+type_name:
+  min_length: 3
