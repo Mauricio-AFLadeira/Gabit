@@ -2,9 +2,10 @@
 
 import PackageDescription
 
-// Only the platform-agnostic core lives in the package, which is what lets the
-// Linux container build and test it. The SwiftUI app in App/ consumes MauItKit
-// through the Xcode project generated from project.yml.
+// The platform-agnostic core (MauItKit) and the Postgres-backed API server
+// (Server) both live in this package, which is what lets the Linux container
+// build and test them. The SwiftUI app in App/ consumes MauItKit through the
+// Xcode project generated from project.yml — it does not depend on Server.
 let package = Package(
     name: "MauIt",
     platforms: [
@@ -12,12 +13,30 @@ let package = Package(
         .macOS(.v14),
     ],
     products: [
-        .library(name: "MauItKit", targets: ["MauItKit"])
+        .library(name: "MauItKit", targets: ["MauItKit"]),
+        .executable(name: "Server", targets: ["Server"]),
+    ],
+    dependencies: [
+        .package(url: "https://github.com/vapor/vapor.git", from: "4.106.0"),
+        .package(url: "https://github.com/vapor/fluent.git", from: "4.11.0"),
+        .package(url: "https://github.com/vapor/fluent-postgres-driver.git", from: "2.9.0"),
+        .package(url: "https://github.com/vapor/jwt.git", from: "4.2.2"),
     ],
     targets: [
         .target(
             name: "MauItKit",
             swiftSettings: [.swiftLanguageMode(.v6)]
-        )
+        ),
+        .executableTarget(
+            name: "Server",
+            dependencies: [
+                .target(name: "MauItKit"),
+                .product(name: "Vapor", package: "vapor"),
+                .product(name: "Fluent", package: "fluent"),
+                .product(name: "FluentPostgresDriver", package: "fluent-postgres-driver"),
+                .product(name: "JWT", package: "jwt"),
+            ],
+            swiftSettings: [.swiftLanguageMode(.v6)]
+        ),
     ]
 )

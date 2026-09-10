@@ -45,8 +45,9 @@ FROM base AS deps
 
 COPY --chown=mauit:mauit Package.swift Package.resolve[d] ./
 
-RUN mkdir -p Sources/MauItKit \
+RUN mkdir -p Sources/MauItKit Sources/Server \
     && : > Sources/MauItKit/Placeholder.swift \
+    && printf '@main\nstruct Placeholder {\n    static func main() {}\n}\n' > Sources/Server/Placeholder.swift \
     && swift package resolve \
     && rm -rf Sources \
     && mkdir -p /home/mauit/.cache/org.swift.swiftpm

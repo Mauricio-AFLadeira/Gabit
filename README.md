@@ -19,10 +19,28 @@ extraído da mesma doc.
 | 03 | Quick add — teclado numérico custom (`UIViewRepresentable`) | `Screens/LogFoodView.swift`, `Components/NumericKeypad.swift` |
 | 04 | Progress — tendência de peso, projeção, aderência | `Screens/ProgressScreenView.swift` |
 
-Todas as telas rodam sobre dados mock (`Sources/MauItKit/MockData.swift`) —
-não há persistência nem backend. A única conta real é a do alvo diário
+Todas as telas rodam sobre dados mock (`Sources/MauItKit/MockData.swift`) — a
+tela ainda não fala com o backend. A única conta real é a do alvo diário
 (`EnergyMath`), que é justamente o que a tela 01 demonstra: o alvo é
 derivado da direção e da taxa, nunca digitado.
+
+## Backend
+
+`Sources/Server/` é uma API Vapor + Fluent/PostgreSQL, no mesmo pacote Swift
+que `MauItKit` (e compilada pelo mesmo container Linux). Hoje cobre só
+usuários e autenticação:
+
+| Rota | O que faz |
+|---|---|
+| `POST /auth/register` | Cria a conta (`email` + `password`, mínimo 8 caracteres), devolve `{ user, token }` |
+| `POST /auth/login` | Autentica e devolve `{ user, token }` |
+| `GET /auth/me` | Devolve o usuário do token (`Authorization: Bearer <token>`) |
+| `GET /health` | Healthcheck |
+
+`token` é um JWT HS256 (`JWT_SECRET` no `.env`) válido por 7 dias. Senhas são
+guardadas com Bcrypt (`password_hash`), nunca em texto puro. O schema
+(`users`) é criado por `make migrate`, que roda a migration Fluent
+`CreateUser` contra o Postgres do `docker compose` (serviço `db`).
 
 ## Design system
 
@@ -44,7 +62,8 @@ derivado da direção e da taxa, nunca digitado.
 
 ## Requisitos
 
-Para o núcleo (`MauItKit`), lint e formatação: **apenas Docker e Docker Compose.**
+Para o núcleo (`MauItKit`), o backend (`Server`) e Postgres, lint e formatação:
+**apenas Docker e Docker Compose.**
 
 Para rodar o app de fato: **macOS com Xcode 16+**. SwiftUI, UIKit e o SDK do iOS
 são frameworks fechados da Apple e não existem para Linux — nenhum container
@@ -57,11 +76,14 @@ make setup
 make up
 ```
 
-A partir daí, tudo o que não precisa do SDK da Apple roda dentro do container:
+`make up` também sobe o Postgres (serviço `db`). A partir daí, tudo o que não
+precisa do SDK da Apple roda dentro do container:
 
 ```
 make lint      # verifica Sources/ e App/
-make build     # compila o núcleo
+make build     # compila núcleo + backend
+make migrate   # cria o schema no Postgres
+make serve     # sobe a API em localhost:8080
 ```
 
 No macOS, para abrir o app:
@@ -77,16 +99,18 @@ open MauIt.xcodeproj
 | Comando | O que faz | Onde roda |
 |---|---|---|
 | `make setup` | Cria o `.env`, ativa o hook de pre-commit e builda a imagem | host |
-| `make up` | Sobe o container do toolchain | host |
+| `make up` | Sobe o container do toolchain e o Postgres | host |
 | `make down` | Derruba o ambiente | host |
 | `make logs` | Acompanha os logs do container | host |
 | `make shell` | Abre um shell dentro do container | container |
 | `make lint` | `swift format lint --strict` em `Sources/` e `App/` | container |
 | `make fmt` | Formata todo o Swift no lugar | container |
-| `make build` | `swift build` do núcleo | container |
+| `make build` | `swift build` (núcleo + backend) | container |
 | `make test` | `swift test` do núcleo | container |
+| `make migrate` | Roda as migrations Fluent contra o Postgres | container |
+| `make serve` | Sobe a API (`Server`) em `0.0.0.0:8080` | container |
 | `make xcode` | Gera `MauIt.xcodeproj` a partir do `project.yml` | host (macOS) |
-| `make reset` | Derruba tudo e apaga os volumes | host |
+| `make reset` | Derruba tudo e apaga os volumes (inclui os dados do Postgres) | host |
 
 ## Estrutura
 
@@ -95,18 +119,28 @@ Sources/MauItKit/    Núcleo: modelos (DayLog, WeightReading, GoalDirection...),
                      EnergyMath, MockData. Swift puro + Foundation, sem
                      framework da Apple. É o que o container compila, testa
                      e o que a CI em Linux consegue verificar.
+Sources/Server/      API Vapor + Fluent/PostgreSQL.
+  Models/            Modelos Fluent (User).
+  Migrations/         Migrations do schema (CreateUser).
+  DTOs/              Payloads de request/response (Content).
+  Auth/              JWTPayload e o authenticator do bearer token.
+  Controllers/       Rotas agrupadas por recurso (AuthController).
+  configure.swift    Conecta Postgres, registra migrations e o signer JWT.
+  routes.swift       Registra os RouteCollection na Application.
 App/MauIt/           Camada SwiftUI.
   DesignSystem/      Cores (OKLCH), tipografia, métricas.
   Components/        Botões, anel de progresso, barra de macro, linha de
                      entrada, teclado numérico (UIKit).
   Screens/           As cinco telas.
   RootView.swift     Onboarding → tabs (Today/Progress) → sheet de log.
-Package.swift        Manifesto do pacote (declara só MauItKit).
+Package.swift        Manifesto do pacote: MauItKit (biblioteca) e Server
+                     (executável, depende de MauItKit + Vapor/Fluent/JWT).
 project.yml          Fonte de verdade do projeto Xcode. O .xcodeproj é gerado
                      e não é versionado — edite este arquivo, não o projeto.
 Dockerfile           Estágios: base → deps → dev (o que o compose roda) e
                      build → release (para CI em Linux).
-compose.yaml         O container do toolchain e seus volumes de cache.
+compose.yaml         O container do toolchain, o Postgres (`db`) e os
+                     volumes de cache.
 ```
 
 ## Decisões
@@ -146,7 +180,19 @@ configuração do app legível no diff.
 `.ipa` assinado, produzido pelo Xcode. O estágio `release` do Dockerfile existe
 para CI em Linux e para reaproveitar `MauItKit` fora do app.
 
-**As cinco telas rodam sobre `MockData`, não sobre uma API.** É a decisão
-correta para um protótipo de portfólio: mostra arquitetura e fidelidade
-visual sem fingir que existe um backend. `DayLog`, `ProgressSummary` etc.
-são o formato que uma camada de persistência real preencheria depois.
+**As cinco telas ainda rodam sobre `MockData`, não sobre a API.** `DayLog`,
+`ProgressSummary` etc. são o formato que o backend vai preencher conforme as
+próximas entidades (metas, dias, peso) ganharem tabela — hoje só usuários e
+autenticação existem do lado do servidor.
+
+**`Server` é um alvo à parte no mesmo pacote, não um serviço separado.**
+Reaproveita o container Linux que já builda `MauItKit`, o mesmo toolchain
+Swift e o mesmo `swift-format`/lint — sem duplicar Dockerfile ou versão de
+Swift para o backend. `App/` (SwiftUI) não depende de `Server`; a única
+ligação viria de o app de fato chamar a API pela rede, o que ainda não existe.
+
+**JWT em vez de sessão com cookie.** O cliente é um app iOS, não um browser —
+um bearer token guardado no Keychain encaixa melhor que gerenciar cookies.
+`JWTPayload.verify` só confere expiração; revogação (logout do lado do
+servidor, troca de senha invalidando tokens antigos) fica para quando isso
+importar de verdade.

@@ -8,7 +8,7 @@ EXEC    := $(COMPOSE) exec -T app
 # container cannot compile it.
 SWIFT_DIRS := Sources App
 
-.PHONY: help setup up down logs shell lint fmt build test xcode reset
+.PHONY: help setup up down logs shell lint fmt build test migrate serve xcode reset
 
 help:  ## Lista os comandos disponíveis
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | awk 'BEGIN {FS = ":.*?## "}; {printf "  \033[36m%-8s\033[0m %s\n", $$1, $$2}'
@@ -53,6 +53,12 @@ test:  ## Roda os testes do core
 	else \
 		$(EXEC) swift test; \
 	fi
+
+migrate:  ## Roda as migrations do Postgres (Server, via Fluent)
+	$(EXEC) swift run Server migrate --yes
+
+serve:  ## Sobe a API (Server) em 0.0.0.0:8080 dentro do container
+	$(EXEC) swift run Server serve --hostname 0.0.0.0 --env $${APP_ENV:-development}
 
 xcode:  ## Gera MauIt.xcodeproj a partir do project.yml (macOS, fora do container)
 	@command -v xcodegen >/dev/null 2>&1 || { echo "xcodegen não encontrado. Instale com: brew install xcodegen"; exit 1; }
