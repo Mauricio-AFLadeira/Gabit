@@ -3,20 +3,20 @@
 import PackageDescription
 
 // Only the platform-agnostic core lives in the package, which is what lets the
-// Linux container build and test it. The SwiftUI app in App/ consumes GabitKit
+// Linux container build and test it. The SwiftUI app in App/ consumes MauItKit
 // through the Xcode project generated from project.yml.
 let package = Package(
-    name: "Gabit",
+    name: "MauIt",
     platforms: [
         .iOS(.v17),
         .macOS(.v14),
     ],
     products: [
-        .library(name: "GabitKit", targets: ["GabitKit"])
+        .library(name: "MauItKit", targets: ["MauItKit"])
     ],
     targets: [
         .target(
-            name: "GabitKit",
+            name: "MauItKit",
             swiftSettings: [.swiftLanguageMode(.v6)]
         )
     ]

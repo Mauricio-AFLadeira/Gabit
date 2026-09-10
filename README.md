@@ -1,11 +1,50 @@
-# Gabit
+# MauIt
 
-App iOS em Swift + SwiftUI, com o núcleo de regras isolado num pacote SPM que
-compila também em Linux.
+App iOS em Swift + SwiftUI para registro de alimentos e acompanhamento de
+calorias — meta, déficit/superávit, macros e peso. Núcleo de regras isolado
+num pacote SPM que compila também em Linux.
+
+Implementado a partir do handoff de design `Gabit - Screens & Foundations`
+(Claude Design): cinco telas — onboarding de meta, Today, quick-add com
+teclado numérico em UIKit, progresso de peso e o estado "acima do
+orçamento" — mais o design system (paleta OKLCH, tipografia, espaçamento)
+extraído da mesma doc.
+
+## Telas
+
+| # | Tela | Arquivo |
+|---|---|---|
+| 01 | Onboarding — meta (direção, taxa, alvo derivado) | `Screens/OnboardingGoalView.swift` |
+| 02 / 05 | Today — no orçamento e acima do orçamento | `Screens/TodayView.swift` |
+| 03 | Quick add — teclado numérico custom (`UIViewRepresentable`) | `Screens/LogFoodView.swift`, `Components/NumericKeypad.swift` |
+| 04 | Progress — tendência de peso, projeção, aderência | `Screens/ProgressScreenView.swift` |
+
+Todas as telas rodam sobre dados mock (`Sources/MauItKit/MockData.swift`) —
+não há persistência nem backend. A única conta real é a do alvo diário
+(`EnergyMath`), que é justamente o que a tela 01 demonstra: o alvo é
+derivado da direção e da taxa, nunca digitado.
+
+## Design system
+
+`App/MauIt/DesignSystem/` reproduz a doc à risca:
+
+- **Cores** — `Color+OKLCH.swift` implementa a conversão OKLCH → sRGB (via
+  OKLab) usada pelo `oklch()` do browser, então a paleta bate com a doc bit
+  a bit em vez de aproximar por hex. `Palette.swift` nomeia cada token
+  (neutros, semânticas, macros).
+- **Tipografia** — face do sistema para tudo que o usuário lê (Dynamic Type
+  de graça); mono para unidades, datas e labels. A doc especifica IBM Plex
+  Mono; o app usa a fonte mono do sistema como substituta — zero setup de
+  fonte, mesmo caráter tabular. Trocar para a IBM Plex Mono de verdade é
+  uma questão de registrar os arquivos no `Info.plist` e apontar
+  `Typography.swift` para eles.
+- **Métricas** — `Metrics.swift` fixa as regras da doc: raio 14 para
+  cards, 12 para controles, 999 para pills; escala de espaçamento de 4pt;
+  alvo de toque mínimo 44×44.
 
 ## Requisitos
 
-Para o núcleo (`GabitKit`), lint e formatação: **apenas Docker e Docker Compose.**
+Para o núcleo (`MauItKit`), lint e formatação: **apenas Docker e Docker Compose.**
 
 Para rodar o app de fato: **macOS com Xcode 16+**. SwiftUI, UIKit e o SDK do iOS
 são frameworks fechados da Apple e não existem para Linux — nenhum container
@@ -30,7 +69,7 @@ No macOS, para abrir o app:
 ```
 brew install xcodegen
 make xcode
-open Gabit.xcodeproj
+open MauIt.xcodeproj
 ```
 
 ## Comandos
@@ -46,18 +85,23 @@ open Gabit.xcodeproj
 | `make fmt` | Formata todo o Swift no lugar | container |
 | `make build` | `swift build` do núcleo | container |
 | `make test` | `swift test` do núcleo | container |
-| `make xcode` | Gera `Gabit.xcodeproj` a partir do `project.yml` | host (macOS) |
+| `make xcode` | Gera `MauIt.xcodeproj` a partir do `project.yml` | host (macOS) |
 | `make reset` | Derruba tudo e apaga os volumes | host |
 
 ## Estrutura
 
 ```
-Sources/GabitKit/    Núcleo: modelos, regras, persistência. Swift puro +
-                     Foundation, sem framework da Apple. É o que o container
-                     compila, testa e o que a CI em Linux consegue verificar.
-App/Gabit/           Camada SwiftUI. Só compila no Xcode, mas é formatada e
-                     lintada pelo container junto com o resto.
-Package.swift        Manifesto do pacote (declara só GabitKit).
+Sources/MauItKit/    Núcleo: modelos (DayLog, WeightReading, GoalDirection...),
+                     EnergyMath, MockData. Swift puro + Foundation, sem
+                     framework da Apple. É o que o container compila, testa
+                     e o que a CI em Linux consegue verificar.
+App/MauIt/           Camada SwiftUI.
+  DesignSystem/      Cores (OKLCH), tipografia, métricas.
+  Components/        Botões, anel de progresso, barra de macro, linha de
+                     entrada, teclado numérico (UIKit).
+  Screens/           As cinco telas.
+  RootView.swift     Onboarding → tabs (Today/Progress) → sheet de log.
+Package.swift        Manifesto do pacote (declara só MauItKit).
 project.yml          Fonte de verdade do projeto Xcode. O .xcodeproj é gerado
                      e não é versionado — edite este arquivo, não o projeto.
 Dockerfile           Estágios: base → deps → dev (o que o compose roda) e
@@ -70,7 +114,7 @@ compose.yaml         O container do toolchain e seus volumes de cache.
 **A divisão núcleo/app é o ponto do ambiente.** Sem ela o Docker não teria o que
 fazer num projeto iOS. Com ela, regra de negócio ganha build e teste rápidos e
 reprodutíveis em qualquer máquina, e só a camada de tela depende do macOS.
-Vale manter `GabitKit` livre de `import SwiftUI` — no dia em que escapar um, o
+Vale manter `MauItKit` livre de `import SwiftUI` — no dia em que escapar um, o
 `make build` acusa.
 
 **Lint cobre `App/` mesmo sem SDK da Apple.** `swift-format` trabalha em cima da
@@ -88,8 +132,7 @@ de `WITH_SWIFTLINT=1` no `.env`, com o `.swiftlint.yml` já pronto.
 clonar o repositório daqui a três meses.
 
 **Modo de linguagem Swift 6** ligado no pacote e `SWIFT_STRICT_CONCURRENCY=complete`
-no alvo do app. Ligar isso agora, com quatro arquivos, é barato; ligar depois de
-um app inteiro pronto, não.
+no alvo do app.
 
 **`.build` é um volume nomeado, não o diretório do host.** O Xcode escreve
 objetos Mach-O ali e o container escreve ELF; compartilhar o diretório faz os
@@ -101,4 +144,9 @@ configuração do app legível no diff.
 
 **Não há estágio `prod` de runtime.** O artefato de produção de um app iOS é um
 `.ipa` assinado, produzido pelo Xcode. O estágio `release` do Dockerfile existe
-para CI em Linux e para reaproveitar `GabitKit` fora do app.
+para CI em Linux e para reaproveitar `MauItKit` fora do app.
+
+**As cinco telas rodam sobre `MockData`, não sobre uma API.** É a decisão
+correta para um protótipo de portfólio: mostra arquitetura e fidelidade
+visual sem fingir que existe um backend. `DayLog`, `ProgressSummary` etc.
+são o formato que uma camada de persistência real preencheria depois.
