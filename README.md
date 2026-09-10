@@ -1,152 +1,104 @@
 # MauIt
 
-App iOS em Swift + SwiftUI para registro de alimentos e acompanhamento de
-calorias — meta, déficit/superávit, macros e peso. Núcleo de regras isolado
-num pacote SPM que compila também em Linux.
+A calorie-and-weight tracking app: onboarding goal, a daily Today screen
+(on-track and over-budget states), quick-add with a numeric keypad, and
+weight progress with a trend line and adherence stats.
 
-Implementado a partir do handoff de design `Gabit - Screens & Foundations`
-(Claude Design): cinco telas — onboarding de meta, Today, quick-add com
-teclado numérico em UIKit, progresso de peso e o estado "acima do
-orçamento" — mais o design system (paleta OKLCH, tipografia, espaçamento)
-extraído da mesma doc.
+Originally built in Swift (SwiftUI + Vapor); this is a full port to
+**React Native + TypeScript** on the client and **Node + Express +
+TypeScript** on the server, sharing one domain package between them. It
+implements the five screens from the `Gabit - Screens & Foundations`
+design handoff (Claude Design) — onboarding, Today, quick-add, progress,
+and the over-budget state of Today.
 
-## Telas
+## Structure
 
-| # | Tela | Arquivo |
-|---|---|---|
-| 01 | Onboarding — meta (direção, taxa, alvo derivado) | `Screens/OnboardingGoalView.swift` |
-| 02 / 05 | Today — no orçamento e acima do orçamento | `Screens/TodayView.swift` |
-| 03 | Quick add — teclado numérico custom (`UIViewRepresentable`) | `Screens/LogFoodView.swift`, `Components/NumericKeypad.swift` |
-| 04 | Progress — tendência de peso, projeção, aderência | `Screens/ProgressScreenView.swift` |
-
-Todas as telas rodam sobre dados mock (`Sources/MauItKit/MockData.swift`) —
-não há persistência nem backend. A única conta real é a do alvo diário
-(`EnergyMath`), que é justamente o que a tela 01 demonstra: o alvo é
-derivado da direção e da taxa, nunca digitado.
-
-## Design system
-
-`App/MauIt/DesignSystem/` reproduz a doc à risca:
-
-- **Cores** — `Color+OKLCH.swift` implementa a conversão OKLCH → sRGB (via
-  OKLab) usada pelo `oklch()` do browser, então a paleta bate com a doc bit
-  a bit em vez de aproximar por hex. `Palette.swift` nomeia cada token
-  (neutros, semânticas, macros).
-- **Tipografia** — face do sistema para tudo que o usuário lê (Dynamic Type
-  de graça); mono para unidades, datas e labels. A doc especifica IBM Plex
-  Mono; o app usa a fonte mono do sistema como substituta — zero setup de
-  fonte, mesmo caráter tabular. Trocar para a IBM Plex Mono de verdade é
-  uma questão de registrar os arquivos no `Info.plist` e apontar
-  `Typography.swift` para eles.
-- **Métricas** — `Metrics.swift` fixa as regras da doc: raio 14 para
-  cards, 12 para controles, 999 para pills; escala de espaçamento de 4pt;
-  alvo de toque mínimo 44×44.
-
-## Requisitos
-
-Para o núcleo (`MauItKit`), lint e formatação: **apenas Docker e Docker Compose.**
-
-Para rodar o app de fato: **macOS com Xcode 16+**. SwiftUI, UIKit e o SDK do iOS
-são frameworks fechados da Apple e não existem para Linux — nenhum container
-constrói um app iOS, e este não finge que constrói.
-
-## Como rodar
+This is an npm-workspaces monorepo:
 
 ```
-make setup
-make up
+packages/shared/   @mauit/shared — domain types (DayLog, GoalDirection,
+                   MealType, FoodEntry, WeightReading...), the calorie-
+                   target formula (EnergyMath's dailyTarget), macro-target
+                   split, signed-number formatting, and mock data. Pure
+                   TypeScript, no React/Express — both mobile/ and
+                   backend/ depend on it, so the math lives in exactly one
+                   place instead of being reimplemented twice.
+mobile/            @mauit/mobile — the React Native app (Expo), TypeScript.
+                   Five screens, a small design system (OKLCH-accurate
+                   colors, typography, metrics) ported from the Swift
+                   version's DesignSystem/.
+backend/           @mauit/backend — the API (Express + Prisma +
+                   PostgreSQL), TypeScript. JWT auth, one endpoint per
+                   screen's data. See backend/README.md.
 ```
 
-A partir daí, tudo o que não precisa do SDK da Apple roda dentro do container:
+## Why this shape
+
+The Swift version split into `MauItKit` (a platform-agnostic Swift package
+with the domain models and math) and an `App/` SwiftUI layer, specifically
+so the calorie-target formula lived in one place and both the client and a
+future server could share it. `packages/shared` is the direct continuation
+of that idea — and TypeScript makes it more literal here than Swift ever
+could: `mobile/` and `backend/` import the *exact same* `dailyTarget()`
+and `defaultMacroTargets()` functions, not two independent
+reimplementations that happen to agree today.
+
+## Setup
 
 ```
-make lint      # verifica Sources/ e App/
-make build     # compila o núcleo
+npm install
+npm run build:shared
 ```
 
-No macOS, para abrir o app:
+Every workspace depends on `@mauit/shared`'s **compiled** output
+(`dist/`), not its TypeScript source directly — simpler and more robust
+than teaching Metro or `tsx` to resolve a sibling package's `.ts` files,
+at the cost of needing a rebuild step. Re-run `npm run build:shared`
+(or `npm run dev --workspace=@mauit/shared` to watch) after changing
+anything under `packages/shared/src`.
+
+## Run the mobile app
 
 ```
-brew install xcodegen
-make xcode
-open MauIt.xcodeproj
+npm run dev:mobile
 ```
 
-## Comandos
+Opens the Expo dev server — scan the QR code with Expo Go, or press `i`
+for the iOS simulator / `a` for an Android emulator. The app runs entirely
+on `@mauit/shared`'s mock data right now; it isn't wired to the API yet
+(see "What's not done" below).
 
-| Comando | O que faz | Onde roda |
-|---|---|---|
-| `make setup` | Cria o `.env`, ativa o hook de pre-commit e builda a imagem | host |
-| `make up` | Sobe o container do toolchain | host |
-| `make down` | Derruba o ambiente | host |
-| `make logs` | Acompanha os logs do container | host |
-| `make shell` | Abre um shell dentro do container | container |
-| `make lint` | `swift format lint --strict` em `Sources/` e `App/` | container |
-| `make fmt` | Formata todo o Swift no lugar | container |
-| `make build` | `swift build` do núcleo | container |
-| `make test` | `swift test` do núcleo | container |
-| `make xcode` | Gera `MauIt.xcodeproj` a partir do `project.yml` | host (macOS) |
-| `make reset` | Derruba tudo e apaga os volumes | host |
-
-## Estrutura
+## Run the API
 
 ```
-Sources/MauItKit/    Núcleo: modelos (DayLog, WeightReading, GoalDirection...),
-                     EnergyMath, MockData. Swift puro + Foundation, sem
-                     framework da Apple. É o que o container compila, testa
-                     e o que a CI em Linux consegue verificar.
-App/MauIt/           Camada SwiftUI.
-  DesignSystem/      Cores (OKLCH), tipografia, métricas.
-  Components/        Botões, anel de progresso, barra de macro, linha de
-                     entrada, teclado numérico (UIKit).
-  Screens/           As cinco telas.
-  RootView.swift     Onboarding → tabs (Today/Progress) → sheet de log.
-Package.swift        Manifesto do pacote (declara só MauItKit).
-project.yml          Fonte de verdade do projeto Xcode. O .xcodeproj é gerado
-                     e não é versionado — edite este arquivo, não o projeto.
-Dockerfile           Estágios: base → deps → dev (o que o compose roda) e
-                     build → release (para CI em Linux).
-compose.yaml         O container do toolchain e seus volumes de cache.
+npm run build:shared   # if you haven't already
+cd backend
+docker compose up --build
 ```
 
-## Decisões
+Full details, endpoints, and `curl` examples in `backend/README.md`.
 
-**A divisão núcleo/app é o ponto do ambiente.** Sem ela o Docker não teria o que
-fazer num projeto iOS. Com ela, regra de negócio ganha build e teste rápidos e
-reprodutíveis em qualquer máquina, e só a camada de tela depende do macOS.
-Vale manter `MauItKit` livre de `import SwiftUI` — no dia em que escapar um, o
-`make build` acusa.
+## What's not done
 
-**Lint cobre `App/` mesmo sem SDK da Apple.** `swift-format` trabalha em cima da
-sintaxe, não da compilação, então o container consegue checar a camada SwiftUI
-sem conseguir construí-la.
+- **The mobile app doesn't call the API.** Both halves exist and share
+  `@mauit/shared`'s types, but nothing in `mobile/src/screens` fetches
+  from `backend/` yet — every screen still reads directly from
+  `mockData`. Wiring that up means adding a small fetch/auth-token layer
+  in `mobile/` and swapping each screen's `mockData.*` reference for a
+  network call.
+- **No tests.** Neither workspace has a test runner configured.
+- **No ESLint.** `.editorconfig` covers formatting whitespace; nothing
+  enforces TypeScript lint rules yet.
+- Backend-specific gaps (migrations, token expiry, the over-budget
+  insight text, the progress-screen projection sentence) are called out
+  in `backend/README.md`.
 
-**`swift-format` como linter padrão, SwiftLint opcional.** O `swift-format` vem
-junto do toolchain: zero instalação e sempre na versão do Swift fixada. O
-SwiftLint não publica binário para Linux, então ligá-lo significa compilá-lo
-durante o build da imagem — vários minutos no primeiro `make setup`. Fica atrás
-de `WITH_SWIFTLINT=1` no `.env`, com o `.swiftlint.yml` já pronto.
+## A note on how this was built
 
-**Versões fixadas:** Swift 6.3.3 (`.swift-version` e `SWIFT_VERSION`), SwiftLint
-0.65.1, XcodeGen 2.46.0. Sem `latest` em imagem: `latest` quebra o build de quem
-clonar o repositório daqui a três meses.
-
-**Modo de linguagem Swift 6** ligado no pacote e `SWIFT_STRICT_CONCURRENCY=complete`
-no alvo do app.
-
-**`.build` é um volume nomeado, não o diretório do host.** O Xcode escreve
-objetos Mach-O ali e o container escreve ELF; compartilhar o diretório faz os
-dois toolchains brigarem pelos mesmos artefatos.
-
-**O `.xcodeproj` não é versionado.** Ele é gerado do `project.yml` por
-`make xcode`. É o que evita conflito de merge em XML gerado e mantém a
-configuração do app legível no diff.
-
-**Não há estágio `prod` de runtime.** O artefato de produção de um app iOS é um
-`.ipa` assinado, produzido pelo Xcode. O estágio `release` do Dockerfile existe
-para CI em Linux e para reaproveitar `MauItKit` fora do app.
-
-**As cinco telas rodam sobre `MockData`, não sobre uma API.** É a decisão
-correta para um protótipo de portfólio: mostra arquitetura e fidelidade
-visual sem fingir que existe um backend. `DayLog`, `ProgressSummary` etc.
-são o formato que uma camada de persistência real preencheria depois.
+None of this has been run. This environment has no Node/npm, no Docker
+daemon, and no way to launch a simulator — every file here was hand-
+written and reviewed (import-by-import, brace-by-brace) rather than
+compiled or tested. Treat `npm install` as the real first test; if
+something doesn't resolve, it's almost certainly a small, fixable
+mismatch (a package version, an import) rather than a structural problem
+with the approach.
