@@ -75,7 +75,9 @@ struct TodayView: View {
         HStack(spacing: 22) {
             statLabel("eaten", "\(day.eatenCalories)", Palette.ink)
             Text("\u{00B7}").foregroundStyle(Palette.hairline)
-            statLabel("burn", SignedFormatting.integer(day.burnCalories), day.burnCalories > 0 ? Palette.amberText : Palette.inkSoft)
+            statLabel(
+                "burn", SignedFormatting.integer(day.burnCalories),
+                day.burnCalories > 0 ? Palette.amberText : Palette.inkSoft)
             Text("\u{00B7}").foregroundStyle(Palette.hairline)
             statLabel("target", "\(day.targetCalories)", Palette.ink)
         }
@@ -92,7 +94,8 @@ struct TodayView: View {
 
     private var macroCard: some View {
         HStack(spacing: 18) {
-            MacroBar(title: "Protein", current: day.proteinGrams, target: day.proteinTarget, color: Palette.macroProtein)
+            MacroBar(
+                title: "Protein", current: day.proteinGrams, target: day.proteinTarget, color: Palette.macroProtein)
             MacroBar(title: "Carbs", current: day.carbsGrams, target: day.carbsTarget, color: Palette.macroCarbs)
             MacroBar(title: "Fat", current: day.fatGrams, target: day.fatTarget, color: Palette.macroFat)
         }

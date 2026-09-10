@@ -16,13 +16,13 @@ extension Color {
         let a = c * cos(hueRadians)
         let b = c * sin(hueRadians)
 
-        let l_ = l + 0.3963377774 * a + 0.2158037573 * b
-        let m_ = l - 0.1055613458 * a - 0.0638541728 * b
-        let s_ = l - 0.0894841775 * a - 1.2914855480 * b
+        let lPrime = l + 0.3963377774 * a + 0.2158037573 * b
+        let mPrime = l - 0.1055613458 * a - 0.0638541728 * b
+        let sPrime = l - 0.0894841775 * a - 1.2914855480 * b
 
-        let l3 = l_ * l_ * l_
-        let m3 = m_ * m_ * m_
-        let s3 = s_ * s_ * s_
+        let l3 = lPrime * lPrime * lPrime
+        let m3 = mPrime * mPrime * mPrime
+        let s3 = sPrime * sPrime * sPrime
 
         let rLinear = 4.0767416621 * l3 - 3.3077115913 * m3 + 0.2309699292 * s3
         let gLinear = -1.2684380046 * l3 + 2.6097574011 * m3 - 0.3413193965 * s3
