@@ -1,0 +1,20 @@
+{
+  "name": "mauit",
+  "private": true,
+  "workspaces": [
+    "packages/*",
+    "backend",
+    "mobile"
+  ],
+  "scripts": {
+    "build:shared": "npm run build --workspace=@mauit/shared",
+    "dev:backend": "npm run dev --workspace=@mauit/backend",
+    "dev:mobile": "npm run start --workspace=@mauit/mobile",
+    "lint": "npm run lint --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

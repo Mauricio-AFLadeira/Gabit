@@ -1,0 +1,40 @@
+name: mauit-backend
+
+services:
+  app:
+    build:
+      context: ..
+      dockerfile: backend/Dockerfile
+    environment:
+      DATABASE_URL: postgresql://mauit:mauit@db:5432/mauit
+      JWT_SECRET: ${JWT_SECRET:-dev-secret-change-me}
+      PORT: "8080"
+    ports:
+      - "8080:8080"
+    depends_on:
+      db:
+        condition: service_healthy
+    # `prisma db push` rather than `migrate deploy`: no migration history
+    # has been generated yet (that needs a live Postgres to run
+    # `prisma migrate dev` against, which nothing in this sandbox has) —
+    # see backend/README.md for switching to real migrations.
+    command: ["sh", "-c", "npx prisma db push --skip-generate && node dist/index.js"]
+
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: mauit
+      POSTGRES_PASSWORD: mauit
+      POSTGRES_DB: mauit
+    ports:
+      - "5432:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U mauit"]
+      interval: 2s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  db_data:
