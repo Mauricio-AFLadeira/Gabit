@@ -63,10 +63,19 @@ jobs:
 
   ios-build:
     name: Build iOS app (Xcode)
-    runs-on: macos-14
+    runs-on: macos-15
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
+
+      # XcodeGen's project format can outrun whichever Xcode the runner
+      # image ships as its *default* — pin the newest Xcode actually
+      # installed on the runner rather than whatever `xcode-select` points
+      # at out of the box, so `xcodegen generate` and `xcodebuild` agree.
+      - name: Select latest available Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
 
       - name: Install XcodeGen
         run: brew install xcodegen
