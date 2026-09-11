@@ -1,21 +1,52 @@
 import SwiftUI
 
-/// Wires the five screens together: onboarding leads into a Today/Progress
-/// tab flow, and Today presents Log food as a sheet.
+/// Wires the app together: auth (login/register) gates onboarding, which
+/// leads into a Today/Progress tab flow, and Today presents Log food as a
+/// sheet. A restored session (token already in the Keychain) skips straight
+/// to onboarding.
 struct RootView: View {
-    private enum Phase {
+    private enum Phase: Equatable {
+        case login
+        case register
         case onboarding
         case main
     }
 
-    @State private var phase: Phase = .onboarding
+    @StateObject private var authViewModel = AuthViewModel()
+    // A token already in the Keychain means a previous launch signed in —
+    // read that directly (no need to touch the MainActor-isolated
+    // AuthViewModel just to pick the initial phase).
+    @State private var phase: Phase = TokenStore.load() != nil ? .onboarding : .login
 
     var body: some View {
-        switch phase {
-        case .onboarding:
-            OnboardingGoalView(onContinue: { phase = .main })
-        case .main:
-            MainTabView()
+        Group {
+            switch phase {
+            case .login:
+                LoginView(
+                    viewModel: authViewModel,
+                    onSwitchToRegister: {
+                        authViewModel.clearError()
+                        phase = .register
+                    }
+                )
+            case .register:
+                RegisterView(
+                    viewModel: authViewModel,
+                    onSwitchToLogin: {
+                        authViewModel.clearError()
+                        phase = .login
+                    }
+                )
+            case .onboarding:
+                OnboardingGoalView(onContinue: { phase = .main })
+            case .main:
+                MainTabView()
+            }
+        }
+        .onChange(of: authViewModel.isAuthenticated) { _, isAuthenticated in
+            if isAuthenticated, phase == .login || phase == .register {
+                phase = .onboarding
+            }
         }
     }
 }

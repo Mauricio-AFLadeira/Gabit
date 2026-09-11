@@ -1,0 +1,19 @@
+version: 2
+updates:
+  # Vapor, Fluent, JWT and their transitive dependencies in Package.swift.
+  - package-ecosystem: "swift"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+
+  # Base images in Dockerfile and compose.yaml (swift:*, postgres:*).
+  - package-ecosystem: "docker"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+
+  # Actions pinned in .github/workflows/*.yml.
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
