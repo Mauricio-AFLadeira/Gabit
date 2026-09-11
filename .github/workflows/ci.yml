@@ -41,7 +41,7 @@ jobs:
       JWT_SECRET: ci-test-secret
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Cache SwiftPM
         uses: actions/cache@v4
@@ -66,7 +66,7 @@ jobs:
     runs-on: macos-15
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       # XcodeGen's project format can outrun whichever Xcode the runner
       # image ships as its *default* — pin the newest Xcode actually
