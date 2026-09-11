@@ -14,15 +14,18 @@ extraído da mesma doc.
 
 | # | Tela | Arquivo |
 |---|---|---|
+| — | Login / Sign up — email+senha, ou nome+email+senha+telefone opcional | `Screens/LoginView.swift`, `Screens/RegisterView.swift` |
 | 01 | Onboarding — meta (direção, taxa, alvo derivado) | `Screens/OnboardingGoalView.swift` |
 | 02 / 05 | Today — no orçamento e acima do orçamento | `Screens/TodayView.swift` |
 | 03 | Quick add — teclado numérico custom (`UIViewRepresentable`) | `Screens/LogFoodView.swift`, `Components/NumericKeypad.swift` |
 | 04 | Progress — tendência de peso, projeção, aderência | `Screens/ProgressScreenView.swift` |
 
-Todas as telas rodam sobre dados mock (`Sources/MauItKit/MockData.swift`) — a
-tela ainda não fala com o backend. A única conta real é a do alvo diário
-(`EnergyMath`), que é justamente o que a tela 01 demonstra: o alvo é
-derivado da direção e da taxa, nunca digitado.
+Login e cadastro falam de verdade com `Sources/Server` (`App/MauIt/Auth/`:
+`APIClient`, `AuthViewModel`, `TokenStore` no Keychain) — ver seção Backend.
+Dali em diante (onboarding, Today, Progress, quick-add) as telas ainda rodam
+sobre dados mock (`Sources/MauItKit/MockData.swift`). A única conta real
+depois do login é a do alvo diário (`EnergyMath`), que é o que a tela 01
+demonstra: o alvo é derivado da direção e da taxa, nunca digitado.
 
 ## Backend
 
@@ -32,15 +35,21 @@ usuários e autenticação:
 
 | Rota | O que faz |
 |---|---|
-| `POST /auth/register` | Cria a conta (`email` + `password`, mínimo 8 caracteres), devolve `{ user, token }` |
-| `POST /auth/login` | Autentica e devolve `{ user, token }` |
+| `POST /auth/register` | Cria a conta (`name`, `email`, `password` — mínimo 8 caracteres —, `phone` opcional), devolve `{ user, token }` |
+| `POST /auth/login` | Autentica com `email` + `password`, devolve `{ user, token }` |
 | `GET /auth/me` | Devolve o usuário do token (`Authorization: Bearer <token>`) |
 | `GET /health` | Healthcheck |
 
 `token` é um JWT HS256 (`JWT_SECRET` no `.env`) válido por 7 dias. Senhas são
 guardadas com Bcrypt (`password_hash`), nunca em texto puro. O schema
-(`users`) é criado por `make migrate`, que roda a migration Fluent
-`CreateUser` contra o Postgres do `docker compose` (serviço `db`).
+(`users`) é criado por `make migrate`, que roda as migrations Fluent
+`CreateUser` e `AddNameAndPhoneToUser` contra o Postgres do `docker compose`
+(serviço `db`).
+
+No app, `App/MauIt/Auth/APIClient.swift` aponta para
+`http://localhost:8080` — funciona de graça no Simulator (que enxerga o
+`localhost` do Mac host); num device físico, troque `APIConfig.baseURL`
+para o IP da máquina na rede local.
 
 ## Design system
 

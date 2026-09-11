@@ -22,7 +22,12 @@ struct AuthController: RouteCollection {
             throw Abort(.conflict, reason: "Email already registered.")
         }
 
-        let user = User(email: email, passwordHash: try Bcrypt.hash(payload.password))
+        let user = User(
+            name: payload.name,
+            email: email,
+            passwordHash: try Bcrypt.hash(payload.password),
+            phone: payload.phone
+        )
         try await user.save(on: req.db)
 
         return try AuthResponse(token: signToken(for: user, req: req), user: UserResponse(user))

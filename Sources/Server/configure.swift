@@ -19,6 +19,7 @@ func configure(_ app: Application) async throws {
     app.databases.use(.postgres(configuration: dbConfig), as: .psql)
 
     app.migrations.add(CreateUser())
+    app.migrations.add(AddNameAndPhoneToUser())
 
     let jwtSecret = Environment.get("JWT_SECRET") ?? "insecure-dev-secret-change-me"
     app.jwt.signers.use(.hs256(key: jwtSecret))

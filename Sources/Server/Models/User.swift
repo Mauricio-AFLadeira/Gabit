@@ -10,11 +10,17 @@ final class User: Model, @unchecked Sendable {
     @ID(key: .id)
     var id: UUID?
 
+    @Field(key: "name")
+    var name: String
+
     @Field(key: "email")
     var email: String
 
     @Field(key: "password_hash")
     var passwordHash: String
+
+    @OptionalField(key: "phone")
+    var phone: String?
 
     @Timestamp(key: "created_at", on: .create)
     var createdAt: Date?
@@ -24,9 +30,11 @@ final class User: Model, @unchecked Sendable {
 
     init() {}
 
-    init(id: UUID? = nil, email: String, passwordHash: String) {
+    init(id: UUID? = nil, name: String, email: String, passwordHash: String, phone: String? = nil) {
         self.id = id
+        self.name = name
         self.email = email
         self.passwordHash = passwordHash
+        self.phone = phone
     }
 }
