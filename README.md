@@ -89,9 +89,10 @@ make up
 precisa do SDK da Apple roda dentro do container:
 
 ```
-make lint      # verifica Sources/ e App/
+make lint      # verifica Sources/, App/ e Tests/
 make build     # compila núcleo + backend
-make migrate   # cria o schema no Postgres
+make test      # MauItKitTests + ServerTests, contra o Postgres de teste
+make migrate   # cria o schema no Postgres de dev
 make serve     # sobe a API em localhost:8080
 ```
 
@@ -112,14 +113,55 @@ open MauIt.xcodeproj
 | `make down` | Derruba o ambiente | host |
 | `make logs` | Acompanha os logs do container | host |
 | `make shell` | Abre um shell dentro do container | container |
-| `make lint` | `swift format lint --strict` em `Sources/` e `App/` | container |
+| `make lint` | `swift format lint --strict` em `Sources/`, `App/` e `Tests/` | container |
 | `make fmt` | Formata todo o Swift no lugar | container |
 | `make build` | `swift build` (núcleo + backend) | container |
-| `make test` | `swift test` do núcleo | container |
-| `make migrate` | Roda as migrations Fluent contra o Postgres | container |
+| `make test` | `swift test` — `MauItKitTests` + `ServerTests` | container |
+| `make migrate` | Roda as migrations Fluent contra o Postgres de dev | container |
 | `make serve` | Sobe a API (`Server`) em `0.0.0.0:8080` | container |
 | `make xcode` | Gera `MauIt.xcodeproj` a partir do `project.yml` | host (macOS) |
 | `make reset` | Derruba tudo e apaga os volumes (inclui os dados do Postgres) | host |
+
+## Desenvolvimento — TDD
+
+Regra de negócio nova (`MauItKit`) ou rota/validação nova (`Server`) entra por
+teste primeiro: escreva o teste falhando em `Tests/`, veja-o falhar
+(`make test`), implemente o mínimo pra ficar verde, refatore. `EnergyMath`,
+`DayLog` e `AuthController` já seguem esse padrão — use-os de referência.
+
+- **`MauItKitTests`** — lógica pura (`XCTAssertEqual` direto), sem rede nem
+  banco. É onde a maior parte da regra de negócio do app deveria morrer:
+  rápido de rodar, roda em qualquer máquina.
+- **`ServerTests`** — sobe a `Application` de verdade (`configure(_:)`, o
+  mesmo que `make serve` usa) contra o banco `mauit_test`
+  (`docker/postgres-init/`). Uma única `Application` é migrada e
+  compartilhada por toda a classe de teste — recriá-la a cada teste (migrar
+  e reverter o schema por teste) tende a travar no shutdown da pool de
+  conexões do Postgres em Linux. Isolamento vem de cada teste usar um email
+  próprio, não de resetar o schema; leia o dado que você acabou de escrever,
+  não assuma tabela vazia. Deliberadamente *não* mocka o Fluent: um mock não
+  pega erro de migration, de query ou de serialização, que é justamente a
+  classe de bug mais comum numa rota nova.
+- Nenhum teste ainda cobre `App/` (SwiftUI) — o Simulator/XCTest de UI fica
+  fora do escopo do container Linux. Verificação da camada de tela hoje é
+  `make xcode` + rodar no Simulator; se isso crescer, um alvo de UI tests via
+  Xcode (não `swift test`) é o próximo passo.
+
+`make test` roda os dois pacotes de teste de uma vez. O CI (veja abaixo) roda
+exatamente esse comando a cada PR — um teste vermelho bloqueia o merge.
+
+## CI
+
+`.github/workflows/ci.yml` roda em todo push/PR para `main`:
+
+| Job | O que faz | Runner |
+|---|---|---|
+| `lint-and-test` | `swift format lint --strict`, `swift build --build-tests`, `swift test` (com um serviço Postgres dedicado) | `swift:6.3.3-noble` (mesma imagem do `Dockerfile`) |
+| `ios-build` | `xcodegen generate` + `xcodebuild build` do app pro Simulator | `macos-14` |
+
+`.github/dependabot.yml` abre PR semanal para atualizações de pacotes Swift
+(`Package.swift`), imagens base (`swift:*`, `postgres:*` no `Dockerfile` e
+`compose.yaml`) e as próprias GitHub Actions fixadas nos workflows.
 
 ## Estrutura
 
@@ -130,26 +172,34 @@ Sources/MauItKit/    Núcleo: modelos (DayLog, WeightReading, GoalDirection...),
                      e o que a CI em Linux consegue verificar.
 Sources/Server/      API Vapor + Fluent/PostgreSQL.
   Models/            Modelos Fluent (User).
-  Migrations/         Migrations do schema (CreateUser).
+  Migrations/         Migrations do schema (CreateUser, AddNameAndPhoneToUser).
   DTOs/              Payloads de request/response (Content).
   Auth/              JWTPayload e o authenticator do bearer token.
   Controllers/       Rotas agrupadas por recurso (AuthController).
   configure.swift    Conecta Postgres, registra migrations e o signer JWT.
   routes.swift       Registra os RouteCollection na Application.
+Tests/
+  MauItKitTests/     Testes de lógica pura (EnergyMath, DayLog, SignedFormatting).
+  ServerTests/       Testes de rota contra o Postgres de teste (AuthController).
 App/MauIt/           Camada SwiftUI.
   DesignSystem/      Cores (OKLCH), tipografia, métricas.
   Components/        Botões, anel de progresso, barra de macro, linha de
-                     entrada, teclado numérico (UIKit).
-  Screens/           As cinco telas.
-  RootView.swift     Onboarding → tabs (Today/Progress) → sheet de log.
-Package.swift        Manifesto do pacote: MauItKit (biblioteca) e Server
-                     (executável, depende de MauItKit + Vapor/Fluent/JWT).
+                     entrada, teclado numérico (UIKit), LabeledTextField.
+  Screens/           Login, Sign up e as cinco telas do produto.
+  Auth/              APIClient, AuthViewModel, TokenStore (Keychain).
+  RootView.swift     Login/Sign up → onboarding → tabs (Today/Progress) → sheet.
+Package.swift        Manifesto do pacote: MauItKit e Server (produtos) mais
+                     MauItKitTests e ServerTests (alvos de teste).
 project.yml          Fonte de verdade do projeto Xcode. O .xcodeproj é gerado
                      e não é versionado — edite este arquivo, não o projeto.
 Dockerfile           Estágios: base → deps → dev (o que o compose roda) e
                      build → release (para CI em Linux).
 compose.yaml         O container do toolchain, o Postgres (`db`) e os
                      volumes de cache.
+docker/postgres-init/ Script que cria o banco `mauit_test` na primeira subida
+                     do volume do Postgres.
+.github/workflows/   CI (lint, build, test, build do app no Xcode).
+.github/dependabot.yml Atualização semanal de pacotes Swift/Docker/Actions.
 ```
 
 ## Decisões
@@ -199,6 +249,13 @@ Reaproveita o container Linux que já builda `MauItKit`, o mesmo toolchain
 Swift e o mesmo `swift-format`/lint — sem duplicar Dockerfile ou versão de
 Swift para o backend. `App/` (SwiftUI) não depende de `Server`; a única
 ligação viria de o app de fato chamar a API pela rede, o que ainda não existe.
+
+**`ServerTests` roda contra Postgres de verdade, não SQLite in-memory.**
+Testar num banco diferente do de produção é o clássico jeito de um teste
+verde esconder uma migration ou uma query que só quebra no Postgres real.
+O banco `mauit_test` (criado uma vez pelo script de init do Postgres) paga o
+custo de precisar do `db` no ar, em troca de os testes realmente provarem
+que a rota funciona contra o banco que vai pra produção.
 
 **JWT em vez de sessão com cookie.** O cliente é um app iOS, não um browser —
 um bearer token guardado no Keychain encaixa melhor que gerenciar cookies.

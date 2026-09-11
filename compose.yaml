@@ -21,6 +21,7 @@ services:
       DATABASE_USERNAME: ${DATABASE_USERNAME:-mauit}
       DATABASE_PASSWORD: ${DATABASE_PASSWORD:-mauit}
       DATABASE_NAME: ${DATABASE_NAME:-mauit}
+      DATABASE_TEST_NAME: ${DATABASE_TEST_NAME:-mauit_test}
       AUTO_MIGRATE: ${AUTO_MIGRATE:-true}
       JWT_SECRET: ${JWT_SECRET:-insecure-dev-secret-change-me}
     ports:
@@ -55,6 +56,10 @@ services:
       POSTGRES_DB: ${DATABASE_NAME:-mauit}
     volumes:
       - pgdata:/var/lib/postgresql/data
+      # Runs once against a fresh volume: creates the `mauit_test` database
+      # ServerTests uses, kept separate from the `mauit` one so `make test`
+      # never touches data you're poking at manually.
+      - ./docker/postgres-init:/docker-entrypoint-initdb.d:ro
     ports:
       - "5432:5432"
     healthcheck:

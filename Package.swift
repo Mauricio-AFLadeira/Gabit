@@ -38,5 +38,18 @@ let package = Package(
             ],
             swiftSettings: [.swiftLanguageMode(.v6)]
         ),
+        .testTarget(
+            name: "MauItKitTests",
+            dependencies: [.target(name: "MauItKit")],
+            swiftSettings: [.swiftLanguageMode(.v6)]
+        ),
+        .testTarget(
+            name: "ServerTests",
+            dependencies: [
+                .target(name: "Server"),
+                .product(name: "XCTVapor", package: "vapor"),
+            ],
+            swiftSettings: [.swiftLanguageMode(.v6)]
+        ),
     ]
 )

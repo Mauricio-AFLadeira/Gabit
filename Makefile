@@ -6,7 +6,7 @@ EXEC    := $(COMPOSE) exec -T app
 
 # swift-format checks syntax, so it covers App/ (SwiftUI) even though the
 # container cannot compile it.
-SWIFT_DIRS := Sources App
+SWIFT_DIRS := Sources App Tests
 
 .PHONY: help setup up down logs shell lint fmt build test migrate serve xcode reset
 
@@ -47,12 +47,8 @@ fmt:  ## Formata todo o Swift no lugar
 build:  ## Compila o core (MauItKit) dentro do container
 	$(EXEC) swift build
 
-test:  ## Roda os testes do core
-	@if [ ! -d Tests ]; then \
-		echo "Ainda não há testes. Crie Tests/MauItKitTests/ e rode de novo — 'swift test' já está configurado."; \
-	else \
-		$(EXEC) swift test; \
-	fi
+test:  ## Roda os testes (MauItKitTests + ServerTests, contra o Postgres de teste)
+	$(EXEC) swift test
 
 migrate:  ## Roda as migrations do Postgres (Server, via Fluent)
 	$(EXEC) swift run Server migrate --yes
