@@ -40,34 +40,67 @@ struct RootView: View {
             case .onboarding:
                 OnboardingGoalView(onContinue: { phase = .main })
             case .main:
-                MainTabView()
+                MainTabView(authViewModel: authViewModel)
             }
         }
         .onChange(of: authViewModel.isAuthenticated) { _, isAuthenticated in
-            if isAuthenticated, phase == .login || phase == .register {
-                phase = .onboarding
+            if isAuthenticated {
+                if phase == .login || phase == .register { phase = .onboarding }
+            } else {
+                phase = .login
             }
         }
     }
 }
 
 private struct MainTabView: View {
+    @ObservedObject var authViewModel: AuthViewModel
+
     @State private var isLoggingFood = false
+    @State private var isMenuOpen = false
+    @State private var isShowingProfile = false
 
     var body: some View {
-        TabView {
-            TodayView(onLogFood: { isLoggingFood = true }, onLogBurn: {})
-                .tabItem { Label("Today", systemImage: "flame") }
+        ZStack(alignment: .trailing) {
+            VStack(spacing: 0) {
+                ControlBar(onMenuTap: { withAnimation(.easeInOut(duration: 0.25)) { isMenuOpen = true } })
 
-            ProgressScreenView(onAddCheckIn: {})
-                .tabItem { Label("Progress", systemImage: "chart.line.uptrend.xyaxis") }
-        }
-        .tint(Palette.ink)
-        .sheet(isPresented: $isLoggingFood) {
-            LogFoodView(
-                onCancel: { isLoggingFood = false },
-                onSave: { isLoggingFood = false }
-            )
+                TabView {
+                    TodayView(onLogFood: { isLoggingFood = true }, onLogBurn: {})
+                        .tabItem { Label("Today", systemImage: "flame") }
+
+                    ProgressScreenView(onAddCheckIn: {})
+                        .tabItem { Label("Progress", systemImage: "chart.line.uptrend.xyaxis") }
+                }
+                .tint(Palette.ink)
+                .sheet(isPresented: $isLoggingFood) {
+                    LogFoodView(
+                        onCancel: { isLoggingFood = false },
+                        onSave: { isLoggingFood = false }
+                    )
+                }
+                .sheet(isPresented: $isShowingProfile) {
+                    ProfileView(user: authViewModel.session?.user, onDone: { isShowingProfile = false })
+                }
+            }
+
+            if isMenuOpen {
+                SideMenu(
+                    userName: authViewModel.session?.user.name ?? "",
+                    userEmail: authViewModel.session?.user.email ?? "",
+                    onSelectProfile: {
+                        withAnimation(.easeInOut(duration: 0.25)) { isMenuOpen = false }
+                        isShowingProfile = true
+                    },
+                    onLogout: {
+                        withAnimation(.easeInOut(duration: 0.25)) { isMenuOpen = false }
+                        authViewModel.signOut()
+                    },
+                    onDismiss: { withAnimation(.easeInOut(duration: 0.25)) { isMenuOpen = false } }
+                )
+                .transition(.move(edge: .trailing))
+                .zIndex(1)
+            }
         }
     }
 }
